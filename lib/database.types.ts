@@ -16,11 +16,10 @@ export interface Database {
           name: string
           type: string
           currency: string
-          balance: number
-          icon: string | null
-          color: string | null
+          icon: string
           created_at: string
           updated_at: string
+          deleted: boolean
         }
         Insert: {
           id?: string
@@ -28,11 +27,10 @@ export interface Database {
           name: string
           type: string
           currency: string
-          balance?: number
-          icon?: string | null
-          color?: string | null
+          icon: string
           created_at?: string
           updated_at?: string
+          deleted?: boolean
         }
         Update: {
           id?: string
@@ -40,11 +38,10 @@ export interface Database {
           name?: string
           type?: string
           currency?: string
-          balance?: number
-          icon?: string | null
-          color?: string | null
+          icon?: string
           created_at?: string
           updated_at?: string
+          deleted?: boolean
         }
       }
       transactions: {

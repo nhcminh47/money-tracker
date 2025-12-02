@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const supabase = await getSupabaseServerClient();
     const body = await request.json();
 
-    const { name, type, currency, icon, color } = body;
+    const { name, type, currency, icon } = body;
 
     if (!name || !type || !currency) {
       return NextResponse.json(
@@ -54,9 +54,7 @@ export async function POST(request: NextRequest) {
       name,
       type,
       currency,
-      balance: 0,
       icon: icon || getDefaultIcon(type),
-      color: color || '#3B82F6',
       created_at: now,
       updated_at: now,
     };
