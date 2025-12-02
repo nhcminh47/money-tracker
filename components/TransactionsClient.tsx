@@ -232,7 +232,7 @@ export default function TransactionsClient() {
       sync().catch((err) => console.error('Sync failed:', err))
     } catch (error) {
       console.error('Failed to toggle cleared status:', error)
-      showToast(t.transactions?.updateFailed || 'Failed to update transaction', 'error')
+      showToast(t.transactions?.saveFailed || 'Failed to update transaction', 'error')
     }
   }
 
