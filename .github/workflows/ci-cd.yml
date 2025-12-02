@@ -3,11 +3,11 @@ name: CI/CD Pipeline
 'on':
   push:
     branches:
-      - main
+      - master
       - develop
   pull_request:
     branches:
-      - main
+      - master
 
 permissions:
   contents: read
@@ -110,7 +110,7 @@ jobs:
     name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
 
     environment:
       name: github-pages
@@ -140,7 +140,7 @@ jobs:
     name: Deploy to Vercel
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
