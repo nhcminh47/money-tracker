@@ -17,7 +17,6 @@ import {
   type Category,
 } from '@/lib/services/categories'
 import { formatCurrency, getSettings, type AppSettings } from '@/lib/services/settings'
-import { sync } from '@/lib/services/sync'
 import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
 
@@ -169,7 +168,6 @@ export default function CategoriesClient() {
       }
       setIsModalOpen(false)
       loadData()
-      sync().catch((err) => console.error('Sync failed:', err))
     } catch (error) {
       console.error('Failed to save category:', error)
       showToast('Failed to save category', 'error')
@@ -185,7 +183,6 @@ export default function CategoriesClient() {
       await deleteCategory(id)
       showToast('Category deleted successfully', 'success')
       loadData()
-      sync().catch((err) => console.error('Sync failed:', err))
     } catch (error) {
       console.error('Failed to delete category:', error)
       showToast((error as Error).message || 'Failed to delete category', 'error')

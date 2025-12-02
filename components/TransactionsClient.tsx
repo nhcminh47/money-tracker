@@ -11,7 +11,6 @@ import { seedCategories } from '@/lib/db/utils'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { getAllAccounts, type Account } from '@/lib/services/accounts'
 import { formatCurrency, getSettings, type AppSettings } from '@/lib/services/settings'
-import { sync } from '@/lib/services/sync'
 import {
   createTransaction,
   deleteTransaction,
@@ -199,8 +198,6 @@ export default function TransactionsClient() {
       }
       setIsModalOpen(false)
       loadData()
-      // Trigger sync to push changes to other devices
-      sync().catch((err) => console.error('Sync failed:', err))
     } catch (error) {
       console.error('Failed to save transaction:', error)
       showToast((error as Error).message || t.transactions?.saveFailed || 'Failed to save transaction', 'error')
@@ -216,8 +213,6 @@ export default function TransactionsClient() {
       await deleteTransaction(id)
       showToast(t.transactions?.deleteSuccess || 'Transaction deleted successfully', 'success')
       loadData()
-      // Trigger sync to push changes to other devices
-      sync().catch((err) => console.error('Sync failed:', err))
     } catch (error) {
       console.error('Failed to delete transaction:', error)
       showToast(t.transactions?.deleteFailed || 'Failed to delete transaction', 'error')
@@ -229,7 +224,6 @@ export default function TransactionsClient() {
       await toggleCleared(id)
       loadData()
       // Trigger sync to push changes to other devices
-      sync().catch((err) => console.error('Sync failed:', err))
     } catch (error) {
       console.error('Failed to toggle cleared status:', error)
       showToast(t.transactions?.saveFailed || 'Failed to update transaction', 'error')

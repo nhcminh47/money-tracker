@@ -1,107 +1,100 @@
-import { db, type Category } from '@/lib/db';
-import { logChange } from '@/lib/db/utils';
+import { db, type Category } from '@/lib/db'
 
 /**
- * Category service - handles all category-related operations with changelog tracking
+ * Category service - handles all category-related operations
  */
 
 // Re-export Category type
-export type { Category } from '@/lib/db';
+export type { Category } from '@/lib/db'
 
 export async function createCategory(data: {
-  name: string;
-  type: Category['type'];
-  color: string;
-  icon: string;
-  parentId?: string | null;
+  name: string
+  type: Category['type']
+  color: string
+  icon: string
+  parentId?: string | null
 }): Promise<Category> {
-  const now = new Date().toISOString();
-  const category: Category = {
-    id: crypto.randomUUID(),
-    name: data.name,
-    type: data.type,
-    color: data.color,
-    icon: data.icon,
-    parentId: data.parentId || null,
-    createdAt: now,
-    updatedAt: now,
-  };
+  const response = await fetch('/api/categories', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
 
-  await db.categories.add(category);
-  await logChange('category', category.id, 'create', category);
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Failed to create category')
+  }
 
-  return category;
+  return await response.json()
 }
 
 export async function getCategory(id: string): Promise<Category | undefined> {
-  return await db.categories.get(id);
+  return await db.categories.get(id)
 }
 
 export async function getAllCategories(): Promise<Category[]> {
-  return await db.categories.orderBy('name').toArray();
+  const response = await fetch('/api/categories')
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch categories')
+  }
+
+  return await response.json()
 }
 
 export async function getCategoriesByType(type: 'income' | 'expense'): Promise<Category[]> {
-  return await db.categories.where('type').equals(type).sortBy('name');
+  return await db.categories.where('type').equals(type).sortBy('name')
 }
 
-export async function updateCategory(
-  id: string,
-  updates: Partial<Omit<Category, 'id' | 'createdAt' | 'updatedAt'>>
-): Promise<void> {
-  const updatedData = {
-    ...updates,
-    updatedAt: new Date().toISOString(),
-  };
+export async function updateCategory(id: string, updates: Partial<Omit<Category, 'id' | 'createdAt' | 'updatedAt'>>): Promise<void> {
+  const response = await fetch(`/api/categories/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  })
 
-  await db.categories.update(id, updatedData);
-  await logChange('category', id, 'update', updatedData);
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Failed to update category')
+  }
 }
 
 export async function deleteCategory(id: string): Promise<void> {
-  // Check if category has transactions
-  const transactionCount = await db.transactions
-    .where('categoryId')
-    .equals(id)
-    .filter((tx) => !tx.deleted)
-    .count();
+  const response = await fetch(`/api/categories/${id}`, {
+    method: 'DELETE',
+  })
 
-  if (transactionCount > 0) {
-    throw new Error('Cannot delete category with existing transactions');
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Failed to delete category')
   }
 
   // Check if category has child categories
-  const childCount = await db.categories
-    .where('parentId')
-    .equals(id)
-    .count();
+  const childCount = await db.categories.where('parentId').equals(id).count()
 
   if (childCount > 0) {
-    throw new Error('Cannot delete category with subcategories');
+    throw new Error('Cannot delete category with subcategories')
   }
-
-  await db.categories.delete(id);
-  await logChange('category', id, 'delete', { id });
 }
 
 export async function getSubcategories(parentId: string): Promise<Category[]> {
-  return await db.categories.where('parentId').equals(parentId).sortBy('name');
+  return await db.categories.where('parentId').equals(parentId).sortBy('name')
 }
 
 export async function getCategoryStats(categoryId: string): Promise<{
-  transactionCount: number;
-  totalAmount: number;
+  transactionCount: number
+  totalAmount: number
 }> {
   const transactions = await db.transactions
     .where('categoryId')
     .equals(categoryId)
     .filter((tx) => !tx.deleted)
-    .toArray();
+    .toArray()
 
-  const totalAmount = transactions.reduce((sum, tx) => sum + tx.amount, 0);
+  const totalAmount = transactions.reduce((sum, tx) => sum + tx.amount, 0)
 
   return {
     transactionCount: transactions.length,
     totalAmount,
-  };
+  }
 }

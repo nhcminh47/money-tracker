@@ -4,7 +4,6 @@ import { Badge, Button, Card, CardContent, Dropdown, EmptyState, Input, Modal, S
 import type { Account } from '@/lib/db'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { createAccount, deleteAccount, getAccountBalance, getAllAccounts, updateAccount } from '@/lib/services/accounts'
-import { sync } from '@/lib/services/sync'
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
@@ -134,7 +133,6 @@ export default function AccountsClient() {
       }
       setIsModalOpen(false)
       loadAccounts()
-      sync().catch((err) => console.error('Sync failed:', err))
     } catch (error) {
       console.error('Failed to save account:', error)
       showToast(t.accounts?.saveFailed || 'Failed to save account', 'error')
@@ -150,7 +148,6 @@ export default function AccountsClient() {
       await deleteAccount(account.id)
       showToast(t.accounts?.deleteSuccess || 'Account deleted successfully', 'success')
       loadAccounts()
-      sync().catch((err) => console.error('Sync failed:', err))
     } catch (error: any) {
       console.error('Failed to delete account:', error)
       showToast(error.message || t.accounts?.deleteFailed || 'Failed to delete account', 'error')

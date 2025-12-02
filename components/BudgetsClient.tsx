@@ -11,7 +11,6 @@ import { createBudget, deleteBudget, getAllBudgetStatuses, updateBudget } from '
 import { getAllCategories } from '@/lib/services/categories'
 import type { AppSettings } from '@/lib/services/settings'
 import { formatCurrency, getSettings } from '@/lib/services/settings'
-import { sync } from '@/lib/services/sync'
 import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
 
@@ -104,7 +103,6 @@ export default function BudgetsClient() {
 
       await loadData()
       setShowModal(false)
-      sync().catch((err) => console.error('Sync failed:', err))
     } catch (error) {
       console.error('Failed to save budget:', error)
       alert('Failed to save budget')
@@ -117,7 +115,6 @@ export default function BudgetsClient() {
     try {
       await deleteBudget(budgetId)
       await loadData()
-      sync().catch((err) => console.error('Sync failed:', err))
     } catch (error) {
       console.error('Failed to delete budget:', error)
       alert('Failed to delete budget')
