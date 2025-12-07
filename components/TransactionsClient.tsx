@@ -1,5 +1,8 @@
 'use client'
 
+import { CategorySuggestion } from '@/components/CategorySuggestion'
+import { NLPInput } from '@/components/NLPInput'
+import { ReceiptScanner } from '@/components/ReceiptScanner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Dropdown } from '@/components/ui/Dropdown'
@@ -56,6 +59,8 @@ export default function TransactionsClient() {
   const [filterAccountId, setFilterAccountId] = useState<string>('')
   const [filterStartDate, setFilterStartDate] = useState<string>('')
   const [filterEndDate, setFilterEndDate] = useState<string>('')
+  const [useQuickAdd, setUseQuickAdd] = useState(false)
+  const [showReceiptScanner, setShowReceiptScanner] = useState(false)
 
   // Load data
   useEffect(() => {
@@ -237,6 +242,46 @@ export default function TransactionsClient() {
       categoryId: type === 'Transfer' ? null : formData.categoryId,
       toAccountId: type === 'Transfer' ? formData.toAccountId : null,
     })
+  }
+
+  function handleNLPParsed(parsed: any) {
+    // Pre-fill form with NLP parsed data
+    const newFormData: TransactionFormData = {
+      ...formData,
+      amount: parsed.amount || formData.amount,
+      type: parsed.type || formData.type,
+      date: parsed.date || formData.date,
+      notes: parsed.description || formData.notes,
+    }
+
+    // Try to match category by name
+    if (parsed.category) {
+      const matchedCategory = categories.find((cat) => cat.name.toLowerCase() === parsed.category.toLowerCase())
+      if (matchedCategory) {
+        newFormData.categoryId = matchedCategory.id
+      }
+    }
+
+    setFormData(newFormData)
+    setUseQuickAdd(false) // Switch to form view to review/edit
+  }
+
+  function handleReceiptScanned(data: any) {
+    // Pre-fill form with scanned receipt data
+    const newFormData: TransactionFormData = {
+      ...formData,
+      amount: data.amount || formData.amount,
+      date: data.date || formData.date,
+      notes: data.merchant || formData.notes,
+      type: 'Expense', // Receipts are typically expenses
+    }
+
+    setFormData(newFormData)
+    setShowReceiptScanner(false) // Close scanner
+  }
+
+  function handleCategorySuggestion(categoryId: string) {
+    setFormData({ ...formData, categoryId })
   }
 
   const filteredCategories = categories.filter((cat) => (formData.type === 'Income' ? cat.type === 'income' : cat.type === 'expense'))
@@ -429,7 +474,31 @@ export default function TransactionsClient() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={
-          editingTransaction ? t.transactions?.editTransaction || 'Edit Transaction' : t.transactions?.addTransaction || 'Add Transaction'
+          <div className='flex items-center justify-between w-full'>
+            <span>
+              {editingTransaction
+                ? t.transactions?.editTransaction || 'Edit Transaction'
+                : t.transactions?.addTransaction || 'Add Transaction'}
+            </span>
+            {!editingTransaction && (
+              <div className='flex gap-2'>
+                <button
+                  onClick={() => setShowReceiptScanner(!showReceiptScanner)}
+                  className='px-3 py-1 text-sm bg-sky-100 hover:bg-sky-200 text-sky-700 rounded-md transition-colors'
+                  type='button'
+                >
+                  📸 Scan Receipt
+                </button>
+                <button
+                  onClick={() => setUseQuickAdd(!useQuickAdd)}
+                  className='px-3 py-1 text-sm bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-md transition-colors'
+                  type='button'
+                >
+                  {useQuickAdd ? '📋 Form' : '✨ Quick Add'}
+                </button>
+              </div>
+            )}
+          </div>
         }
         footer={
           <>
@@ -442,112 +511,155 @@ export default function TransactionsClient() {
             <Button
               variant='primary'
               onClick={handleSubmit}
+              disabled={useQuickAdd || showReceiptScanner}
             >
               {editingTransaction ? t.common?.update || 'Update Transaction' : t.common?.add || 'Add Transaction'}
             </Button>
           </>
         }
       >
-        <form className='space-y-4'>
-          {/* Note: form wrapper kept for semantic HTML */}
-          <Dropdown
-            key='transaction-type'
-            label={t.transactions?.type || 'Type'}
-            value={formData.type}
-            onChange={(value) => handleTypeChange(value as TransactionType)}
-            options={[
-              { value: 'Expense', label: t.transactions?.expense || 'Expense' },
-              { value: 'Income', label: t.transactions?.income || 'Income' },
-              { value: 'Transfer', label: t.transactions?.transfer || 'Transfer' },
-            ]}
-          />
-
-          <Dropdown
-            key='transaction-account'
-            label={formData.type === 'Transfer' ? t.transactions?.fromAccount || 'From Account' : t.transactions?.account || 'Account'}
-            value={formData.accountId}
-            onChange={(value) => setFormData({ ...formData, accountId: value })}
-            placeholder={t.transactions?.selectAccount || 'Select Account'}
-            options={accounts.map((account) => ({
-              value: account.id,
-              label: `${account.icon || ''} ${account.name}`,
-            }))}
-          />
-
-          {formData.type === 'Transfer' && (
+        {showReceiptScanner ? (
+          <div className='space-y-4'>
+            <div className='p-3 bg-blue-50 border border-blue-200 rounded-lg'>
+              <p className='text-sm text-blue-800'>
+                📸 Take a photo of your receipt and we'll extract the transaction details automatically using AI.
+              </p>
+            </div>
+            <ReceiptScanner onScanned={handleReceiptScanned} />
+            <Button
+              variant='secondary'
+              onClick={() => setShowReceiptScanner(false)}
+              className='w-full'
+            >
+              Back to Form
+            </Button>
+          </div>
+        ) : useQuickAdd ? (
+          <div className='space-y-4'>
+            <div className='p-3 bg-emerald-50 border border-emerald-200 rounded-lg'>
+              <p className='text-sm text-emerald-800 mb-2'>
+                ✨ <strong>Quick Add:</strong> Describe your transaction in natural language
+              </p>
+              <p className='text-xs text-emerald-700'>
+                Examples: "Spent $50 on groceries today" • "Received $1000 salary" • "Paid $120 for electricity"
+              </p>
+            </div>
+            <NLPInput onParsed={handleNLPParsed} />
+          </div>
+        ) : (
+          <form className='space-y-4'>
+            {/* Note: form wrapper kept for semantic HTML */}
             <Dropdown
-              key='transaction-to-account'
-              label={t.transactions?.toAccount || 'To Account'}
-              value={formData.toAccountId || ''}
-              onChange={(value) => setFormData({ ...formData, toAccountId: value })}
-              placeholder={t.transactions?.selectAccount || 'Select Account'}
-              options={accounts
-                .filter((account) => account.id !== formData.accountId)
-                .map((account) => ({
-                  value: account.id,
-                  label: `${account.icon || ''} ${account.name}`,
-                }))}
+              key='transaction-type'
+              label={t.transactions?.type || 'Type'}
+              value={formData.type}
+              onChange={(value) => handleTypeChange(value as TransactionType)}
+              options={[
+                { value: 'Expense', label: t.transactions?.expense || 'Expense' },
+                { value: 'Income', label: t.transactions?.income || 'Income' },
+                { value: 'Transfer', label: t.transactions?.transfer || 'Transfer' },
+              ]}
             />
-          )}
 
-          {formData.type !== 'Transfer' && (
             <Dropdown
-              key='transaction-category'
-              label={t.transactions?.category || 'Category'}
-              value={formData.categoryId || ''}
-              onChange={(value) => setFormData({ ...formData, categoryId: value })}
-              placeholder={t.transactions?.selectCategory || 'Select Category'}
-              options={filteredCategories.map((category) => ({
-                value: category.id,
-                label: `${category.icon || ''} ${category.name}`,
+              key='transaction-account'
+              label={formData.type === 'Transfer' ? t.transactions?.fromAccount || 'From Account' : t.transactions?.account || 'Account'}
+              value={formData.accountId}
+              onChange={(value) => setFormData({ ...formData, accountId: value })}
+              placeholder={t.transactions?.selectAccount || 'Select Account'}
+              options={accounts.map((account) => ({
+                value: account.id,
+                label: `${account.icon || ''} ${account.name}`,
               }))}
             />
-          )}
 
-          <Input
-            key='transaction-amount'
-            type='number'
-            label={t.transactions?.amount || 'Amount'}
-            value={formData.amount || ''}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-            required
-            min='0'
-            step='0.01'
-          />
+            {formData.type === 'Transfer' && (
+              <Dropdown
+                key='transaction-to-account'
+                label={t.transactions?.toAccount || 'To Account'}
+                value={formData.toAccountId || ''}
+                onChange={(value) => setFormData({ ...formData, toAccountId: value })}
+                placeholder={t.transactions?.selectAccount || 'Select Account'}
+                options={accounts
+                  .filter((account) => account.id !== formData.accountId)
+                  .map((account) => ({
+                    value: account.id,
+                    label: `${account.icon || ''} ${account.name}`,
+                  }))}
+              />
+            )}
 
-          <Input
-            key='transaction-date'
-            type='date'
-            label={t.transactions?.date || 'Date'}
-            value={formData.date}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, date: e.target.value })}
-            required
-          />
+            {formData.type !== 'Transfer' && (
+              <Dropdown
+                key='transaction-category'
+                label={t.transactions?.category || 'Category'}
+                value={formData.categoryId || ''}
+                onChange={(value) => setFormData({ ...formData, categoryId: value })}
+                placeholder={t.transactions?.selectCategory || 'Select Category'}
+                options={filteredCategories.map((category) => ({
+                  value: category.id,
+                  label: `${category.icon || ''} ${category.name}`,
+                }))}
+              />
+            )}
 
-          <Input
-            key='transaction-notes'
-            type='text'
-            label={t.transactions?.notes || 'Notes (optional)'}
-            value={formData.notes || ''}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, notes: e.target.value })}
-          />
-
-          <div className='flex items-center gap-2'>
-            <input
-              type='checkbox'
-              id='cleared-checkbox'
-              checked={formData.cleared || false}
-              onChange={(e) => setFormData({ ...formData, cleared: e.target.checked })}
-              className='w-4 h-4 text-sky-500 border-gray-300 rounded focus:ring-sky-500'
+            <Input
+              key='transaction-amount'
+              type='number'
+              label={t.transactions?.amount || 'Amount'}
+              value={formData.amount || ''}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+              required
+              min='0'
+              step='0.01'
             />
-            <label
-              htmlFor='cleared-checkbox'
-              className='text-sm text-gray-700 dark:text-gray-300'
-            >
-              ✓ {t.transactions?.cleared || 'Mark as cleared/reconciled'}
-            </label>
-          </div>
-        </form>
+
+            <Input
+              key='transaction-date'
+              type='date'
+              label={t.transactions?.date || 'Date'}
+              value={formData.date}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, date: e.target.value })}
+              required
+            />
+
+            <Input
+              key='transaction-notes'
+              type='text'
+              label={t.transactions?.notes || 'Notes (optional)'}
+              value={formData.notes || ''}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, notes: e.target.value })}
+            />
+
+            {/* AI Category Suggestion */}
+            {formData.type !== 'Transfer' && formData.notes && (
+              <div className='p-3 bg-purple-50 border border-purple-200 rounded-lg'>
+                <p className='text-sm font-medium text-purple-800 mb-2'>🤖 Smart Category Suggestion</p>
+                <CategorySuggestion
+                  description={formData.notes}
+                  type={formData.type === 'Income' ? 'income' : 'expense'}
+                  onSelect={handleCategorySuggestion}
+                />
+              </div>
+            )}
+
+            <div className='flex items-center gap-2'>
+              <input
+                type='checkbox'
+                id='cleared-checkbox'
+                checked={formData.cleared || false}
+                onChange={(e) => setFormData({ ...formData, cleared: e.target.checked })}
+                className='w-4 h-4 text-sky-500 border-gray-300 rounded focus:ring-sky-500'
+              />
+              <label
+                htmlFor='cleared-checkbox'
+                className='text-sm text-gray-700 dark:text-gray-300'
+              >
+                ✓ {t.transactions?.cleared || 'Mark as cleared/reconciled'}
+              </label>
+            </div>
+          </form>
+        )}
       </Modal>
 
       {/* Toast */}
