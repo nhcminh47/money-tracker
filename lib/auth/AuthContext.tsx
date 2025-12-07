@@ -12,7 +12,7 @@ interface AuthContextType {
   session: Session | null
   loading: boolean
   signUp: (email: string, password: string) => Promise<{ error: AuthError | null }>
-  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
+  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<void>
 }
 
@@ -78,11 +78,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error }
   }
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, rememberMe: boolean = false) => {
+    // Set session storage preference before signing in
+    if (rememberMe) {
+      // Use localStorage for persistent sessions
+      sessionStorage.removeItem('sessionOnly')
+      localStorage.setItem('rememberMe', 'true')
+    } else {
+      // Use sessionStorage for session-only (clears on browser close)
+      sessionStorage.setItem('sessionOnly', 'true')
+      localStorage.removeItem('rememberMe')
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
+
     if (!error) {
       router.push('/')
     }

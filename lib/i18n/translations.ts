@@ -9,7 +9,7 @@ export const translations = {
       categories: 'Categories',
       settings: 'Settings',
     },
-    
+
     // Dashboard
     dashboard: {
       title: 'Dashboard',
@@ -31,7 +31,7 @@ export const translations = {
       newAccount: 'New Account',
       transfer: 'Transfer',
     },
-    
+
     // Budgets
     budgets: {
       title: 'Budgets',
@@ -65,7 +65,7 @@ export const translations = {
       aiCreateAllConfirm: 'Create budgets for all categories based on AI analysis?',
       aiSuccess: 'Successfully created budgets!',
     },
-    
+
     // Settings
     settings: {
       title: 'Settings',
@@ -100,7 +100,8 @@ export const translations = {
       failedToReset: 'Failed to reset settings',
       // Export modal
       createBackupTitle: 'Create Encrypted Backup',
-      createBackupDesc: 'Create a password-protected backup of all your data. Keep your passphrase safe - you\'ll need it to restore your data.',
+      createBackupDesc:
+        "Create a password-protected backup of all your data. Keep your passphrase safe - you'll need it to restore your data.",
       passphrase: 'Passphrase',
       confirmPassphrase: 'Confirm Passphrase',
       enterPassphrase: 'Enter a strong passphrase',
@@ -140,7 +141,7 @@ export const translations = {
       enterPassphraseImport: 'Please enter the passphrase',
       dataImportedRefresh: 'Data imported successfully. Refreshing...',
     },
-    
+
     // Authentication
     auth: {
       login: 'Login',
@@ -165,8 +166,9 @@ export const translations = {
       passwordMismatch: 'Passwords do not match',
       passwordTooShort: 'Password must be at least 6 characters',
       offlineNote: 'Note: Authentication requires internet connection',
+      rememberMe: 'Remember me',
     },
-    
+
     // AI Features
     ai: {
       smartCategorization: 'Smart Categorization',
@@ -324,7 +326,7 @@ export const translations = {
       exportFailed: 'Failed to export transactions',
     },
   },
-  
+
   vi: {
     // Navigation
     nav: {
@@ -335,7 +337,7 @@ export const translations = {
       categories: 'Danh mục',
       settings: 'Cài đặt',
     },
-    
+
     // Dashboard
     dashboard: {
       title: 'Tổng quan',
@@ -357,7 +359,7 @@ export const translations = {
       newAccount: 'Tài khoản mới',
       transfer: 'Chuyển khoản',
     },
-    
+
     // Budgets
     budgets: {
       title: 'Ngân sách',
@@ -391,7 +393,7 @@ export const translations = {
       aiCreateAllConfirm: 'Tạo ngân sách cho tất cả danh mục dựa trên phân tích AI?',
       aiSuccess: 'Tạo ngân sách thành công!',
     },
-    
+
     // Settings
     settings: {
       title: 'Cài đặt',
@@ -426,7 +428,8 @@ export const translations = {
       failedToReset: 'Không thể đặt lại cài đặt',
       // Export modal
       createBackupTitle: 'Tạo Bản Sao Lưu Mã Hóa',
-      createBackupDesc: 'Tạo bản sao lưu được bảo vệ bằng mật khẩu cho tất cả dữ liệu của bạn. Giữ an toàn cụm mật khẩu - bạn sẽ cần nó để khôi phục dữ liệu.',
+      createBackupDesc:
+        'Tạo bản sao lưu được bảo vệ bằng mật khẩu cho tất cả dữ liệu của bạn. Giữ an toàn cụm mật khẩu - bạn sẽ cần nó để khôi phục dữ liệu.',
       passphrase: 'Cụm Mật Khẩu',
       confirmPassphrase: 'Xác Nhận Cụm Mật Khẩu',
       enterPassphrase: 'Nhập cụm mật khẩu mạnh',
@@ -466,7 +469,7 @@ export const translations = {
       enterPassphraseImport: 'Vui lòng nhập cụm mật khẩu',
       dataImportedRefresh: 'Đã nhập dữ liệu thành công. Đang làm mới...',
     },
-    
+
     // Authentication
     auth: {
       login: 'Đăng nhập',
@@ -491,8 +494,9 @@ export const translations = {
       passwordMismatch: 'Mật khẩu không khớp',
       passwordTooShort: 'Mật khẩu phải có ít nhất 6 ký tự',
       offlineNote: 'Lưu ý: Xác thực yêu cầu kết nối internet',
+      rememberMe: 'Ghi nhớ đăng nhập',
     },
-    
+
     // AI Features
     ai: {
       smartCategorization: 'Phân Loại Thông Minh',
@@ -650,7 +654,7 @@ export const translations = {
       exportFailed: 'Không thể xuất giao dịch',
     },
   },
-} as const;
+} as const
 
-export type Language = keyof typeof translations;
-export type TranslationKey = typeof translations.en;
+export type Language = keyof typeof translations
+export type TranslationKey = typeof translations.en
