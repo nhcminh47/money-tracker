@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
       type,
       currency,
       icon: icon || getDefaultIcon(type),
+      deleted: false,
       created_at: now,
       updated_at: now,
     }

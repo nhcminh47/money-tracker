@@ -46,11 +46,13 @@ export interface Database {
           category_id: string | null
           type: string
           amount: string
-          description: string | null
+          currency: string
+          notes: string
           date: string
-          recurring: string | null
+          recurring: boolean
           to_account_id: string | null
           cleared: boolean
+          deleted: boolean
           created_at: string
           updated_at: string
         }
@@ -61,11 +63,13 @@ export interface Database {
           category_id?: string | null
           type: string
           amount: string | number
-          description?: string | null
+          currency: string
+          notes?: string
           date: string
-          recurring?: string | null
+          recurring?: boolean
           to_account_id?: string | null
           cleared?: boolean
+          deleted?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -76,11 +80,13 @@ export interface Database {
           category_id?: string | null
           type?: string
           amount?: string | number
-          description?: string | null
+          currency?: string
+          notes?: string
           date?: string
-          recurring?: string | null
+          recurring?: boolean
           to_account_id?: string | null
           cleared?: boolean
+          deleted?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -94,6 +100,7 @@ export interface Database {
           color: string
           icon: string
           parent_id: string | null
+          deleted: boolean
           created_at: string
           updated_at: string
         }
@@ -105,6 +112,7 @@ export interface Database {
           color: string
           icon: string
           parent_id?: string | null
+          deleted?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -116,6 +124,7 @@ export interface Database {
           color?: string
           icon?: string
           parent_id?: string | null
+          deleted?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -127,8 +136,7 @@ export interface Database {
           category_id: string
           amount: string
           period: string
-          start_date: string | null
-          end_date: string | null
+          deleted: boolean
           created_at: string
           updated_at: string
         }
@@ -138,8 +146,7 @@ export interface Database {
           category_id: string
           amount: string | number
           period: string
-          start_date?: string | null
-          end_date?: string | null
+          deleted?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -149,8 +156,7 @@ export interface Database {
           category_id?: string
           amount?: string | number
           period?: string
-          start_date?: string | null
-          end_date?: string | null
+          deleted?: boolean
           created_at?: string
           updated_at?: string
         }
