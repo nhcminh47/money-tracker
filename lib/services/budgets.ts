@@ -8,7 +8,7 @@ export async function createBudget(categoryId: string, amount: number, period: '
   const response = await fetch('/api/budgets', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ categoryId, amount, period }),
+    body: JSON.stringify({ category_id: categoryId, amount, period }),
   })
 
   if (!response.ok) {

@@ -17,7 +17,13 @@ export async function createCategory(data: {
   const response = await fetch('/api/categories', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      name: data.name,
+      type: data.type,
+      color: data.color,
+      icon: data.icon,
+      parent_id: data.parentId || null,
+    }),
   })
 
   if (!response.ok) {
