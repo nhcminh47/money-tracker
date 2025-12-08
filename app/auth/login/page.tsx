@@ -30,9 +30,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 to-blue-50 px-4'>
+    <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-coral-300 via-coral-200 to-coral-100 px-4'>
       <div className='max-w-md w-full'>
-        <div className='bg-white rounded-2xl shadow-xl p-8'>
+        <div className='bg-white rounded-card shadow-card-hover p-8'>
           <div className='text-center mb-8'>
             <div className='text-6xl mb-4'>💰</div>
             <h1 className='text-3xl font-bold text-gray-900 mb-2'>{t.auth?.login || 'Login'}</h1>
@@ -71,7 +71,7 @@ export default function LoginPage() {
                 id='remember-me'
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className='w-4 h-4 text-sky-600 border-gray-300 rounded focus:ring-sky-500'
+                className='w-4 h-4 text-coral-500 border-gray-300 rounded focus:ring-coral-400'
               />
               <label
                 htmlFor='remember-me'
@@ -95,7 +95,7 @@ export default function LoginPage() {
               {t.auth?.noAccount || "Don't have an account?"}{' '}
               <Link
                 href='/auth/signup'
-                className='text-sky-600 hover:text-sky-700 font-medium'
+                className='text-coral-500 hover:text-coral-600 font-medium'
               >
                 {t.auth?.signUp || 'Sign up'}
               </Link>
