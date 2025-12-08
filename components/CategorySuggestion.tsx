@@ -56,14 +56,14 @@ export function CategorySuggestion({ description, type = 'expense', onSelect }: 
   }
 
   return (
-    <div className='bg-purple-50 border border-purple-200 rounded-lg p-3'>
+    <div className='bg-coral-50 border border-coral-200 rounded-lg p-3'>
       <div className='flex items-center gap-2 mb-2'>
-        <Sparkles className='w-4 h-4 text-purple-500' />
-        <span className='text-sm font-medium text-purple-900'>{t.ai.suggestedCategories}</span>
+        <Sparkles className='w-4 h-4 text-coral-500' />
+        <span className='text-sm font-medium text-coral-900'>{t.ai.suggestedCategories}</span>
       </div>
 
       {loading ? (
-        <p className='text-sm text-purple-700'>{t.ai.processing}</p>
+        <p className='text-sm text-coral-700'>{t.ai.processing}</p>
       ) : (
         <div className='space-y-2'>
           {suggestions.map((suggestion) => (

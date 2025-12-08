@@ -1,10 +1,11 @@
 'use client'
 
+import PageHeader from '@/components/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { Dropdown } from '@/components/ui/Dropdown'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
+import { ResponsiveSelect } from '@/components/ui/ResponsiveSelect'
 import { Toast } from '@/components/ui/Toast'
 import { seedCategories } from '@/lib/db/utils'
 import { useTranslation } from '@/lib/i18n/useTranslation'
@@ -198,10 +199,16 @@ export default function CategoriesClient() {
   const expenseCategories = categories.filter((c) => c.type === 'expense')
 
   return (
-    <div className='space-y-6'>
-      {/* Header */}
-      <div className='flex items-center justify-between pl-14 md:pl-0'>
-        <h1 className='text-3xl font-bold text-gray-900'>{t.categories?.title || 'Categories'}</h1>
+    <div className='space-y-8'>
+      <PageHeader
+        title={t.categories?.title || 'Categories'}
+        description='Organize your transactions with categories'
+      />
+
+      <div className='flex items-center justify-between'>
+        <div className='text-sm text-gray-600'>
+          {categories.length} {categories.length === 1 ? 'category' : 'categories'}
+        </div>
         <Button
           onClick={openCreateModal}
           className='hidden md:inline-flex'
@@ -213,7 +220,7 @@ export default function CategoriesClient() {
       {/* Mobile FAB */}
       <button
         onClick={openCreateModal}
-        className='md:hidden fixed bottom-6 right-6 z-30 w-14 h-14 bg-sky-600 hover:bg-sky-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all'
+        className='md:hidden fixed bottom-6 right-6 z-30 w-14 h-14 bg-coral-400 hover:bg-coral-500 text-white rounded-full shadow-button hover:shadow-card flex items-center justify-center transition-all active:scale-95'
         aria-label={t.categories?.createCategory || 'Add Category'}
       >
         <span className='text-2xl'>+</span>
@@ -354,7 +361,7 @@ export default function CategoriesClient() {
             required
           />
 
-          <Dropdown
+          <ResponsiveSelect
             key='category-type'
             label={t.categories?.type || 'Type'}
             value={formData.type}
@@ -373,7 +380,7 @@ export default function CategoriesClient() {
                   key={color}
                   type='button'
                   className={`w-8 h-8 rounded-lg border-2 transition-all ${
-                    formData.color === color ? 'border-sky-500 scale-110' : 'border-gray-300'
+                    formData.color === color ? 'border-coral-500 scale-110' : 'border-gray-300'
                   }`}
                   style={{ backgroundColor: color }}
                   onClick={() => setFormData({ ...formData, color })}
@@ -390,7 +397,7 @@ export default function CategoriesClient() {
                   key={icon}
                   type='button'
                   className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center text-xl transition-all ${
-                    formData.icon === icon ? 'border-sky-500 scale-110 bg-sky-50' : 'border-gray-300'
+                    formData.icon === icon ? 'border-coral-500 scale-110 bg-coral-50' : 'border-gray-300'
                   }`}
                   onClick={() => setFormData({ ...formData, icon })}
                 >

@@ -2,12 +2,13 @@
 
 import { CategorySuggestion } from '@/components/CategorySuggestion'
 import { NLPInput } from '@/components/NLPInput'
+import PageHeader from '@/components/PageHeader'
 import { ReceiptScanner } from '@/components/ReceiptScanner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { Dropdown } from '@/components/ui/Dropdown'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
+import { ResponsiveSelect } from '@/components/ui/ResponsiveSelect'
 import { Toast } from '@/components/ui/Toast'
 import { db } from '@/lib/db'
 import { seedCategories } from '@/lib/db/utils'
@@ -250,8 +251,8 @@ export default function TransactionsClient() {
       ...formData,
       amount: parsed.amount || formData.amount,
       type: parsed.type || formData.type,
-      date: parsed.date || formData.date,
-      notes: parsed.description || formData.notes,
+      date: parsed.date ? parsed.date.toISOString().split('T')[0] : formData.date,
+      notes: parsed.notes || parsed.merchant || formData.notes,
     }
 
     // Try to match category by name
@@ -309,10 +310,16 @@ export default function TransactionsClient() {
   }
 
   return (
-    <div className='space-y-6'>
-      {/* Header */}
-      <div className='flex items-center justify-between pl-14 md:pl-0'>
-        <h1 className='text-3xl font-bold text-gray-900'>{t.transactions?.title || 'Transactions'}</h1>
+    <div className='space-y-8'>
+      <PageHeader
+        title={t.transactions?.title || 'Transactions'}
+        description='Track your income and expenses'
+      />
+
+      <div className='flex items-center justify-between'>
+        <div className='text-sm text-gray-600'>
+          {summary.transactionCount} {summary.transactionCount === 1 ? 'transaction' : 'transactions'}
+        </div>
         <div className='hidden md:flex gap-2'>
           <Button
             onClick={handleExportCSV}
@@ -329,46 +336,38 @@ export default function TransactionsClient() {
       {/* Mobile FAB */}
       <button
         onClick={openCreateModal}
-        className='md:hidden fixed bottom-6 right-6 z-30 w-14 h-14 bg-sky-600 hover:bg-sky-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all'
+        className='md:hidden fixed bottom-6 right-6 z-30 w-14 h-14 bg-coral-400 hover:bg-coral-500 text-white rounded-full shadow-button hover:shadow-card flex items-center justify-center transition-all active:scale-95'
         aria-label={t.transactions?.addTransaction || 'Add Transaction'}
       >
         <span className='text-2xl'>+</span>
       </button>
 
       {/* Summary Cards */}
-      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
-        <Card>
-          <div className='space-y-1'>
-            <p className='text-sm text-gray-500'>{t.transactions?.totalIncome || 'Total Income'}</p>
-            <p className='text-2xl font-bold text-green-600'>{formatCurrency(summary.totalIncome, settings?.currency)}</p>
-          </div>
-        </Card>
-        <Card>
-          <div className='space-y-1'>
-            <p className='text-sm text-gray-500'>{t.transactions?.totalExpense || 'Total Expense'}</p>
-            <p className='text-2xl font-bold text-red-600'>{formatCurrency(summary.totalExpense, settings?.currency)}</p>
-          </div>
-        </Card>
-        <Card>
-          <div className='space-y-1'>
-            <p className='text-sm text-gray-500'>{t.transactions?.netAmount || 'Net Amount'}</p>
-            <p className={`text-2xl font-bold ${summary.netAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(summary.netAmount, settings?.currency)}
-            </p>
-          </div>
-        </Card>
-        <Card>
-          <div className='space-y-1'>
-            <p className='text-sm text-gray-500'>{t.transactions?.totalTransactions || 'Total Transactions'}</p>
-            <p className='text-2xl font-bold text-gray-900'>{summary.transactionCount}</p>
-          </div>
-        </Card>
+      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6'>
+        <div className='bg-gradient-to-br from-green-50 to-green-100 rounded-card p-6 shadow-card'>
+          <p className='text-sm font-medium text-gray-600 mb-2'>{t.transactions?.totalIncome || 'Total Income'}</p>
+          <p className='text-3xl font-bold text-chart-green'>{formatCurrency(summary.totalIncome, settings?.currency, true)}</p>
+        </div>
+        <div className='bg-gradient-to-br from-red-50 to-red-100 rounded-card p-6 shadow-card'>
+          <p className='text-sm font-medium text-gray-600 mb-2'>{t.transactions?.totalExpense || 'Total Expense'}</p>
+          <p className='text-3xl font-bold text-chart-red'>{formatCurrency(summary.totalExpense, settings?.currency, true)}</p>
+        </div>
+        <div className='bg-gradient-to-br from-coral-50 to-coral-100 rounded-card p-6 shadow-card'>
+          <p className='text-sm font-medium text-gray-600 mb-2'>{t.transactions?.netAmount || 'Net Amount'}</p>
+          <p className={`text-3xl font-bold ${summary.netAmount >= 0 ? 'text-chart-green' : 'text-chart-red'}`}>
+            {formatCurrency(summary.netAmount, settings?.currency, true)}
+          </p>
+        </div>
+        <div className='bg-gradient-to-br from-blue-50 to-blue-100 rounded-card p-6 shadow-card'>
+          <p className='text-sm font-medium text-gray-600 mb-2'>{t.transactions?.totalTransactions || 'Total Transactions'}</p>
+          <p className='text-3xl font-bold text-gray-900'>{summary.transactionCount}</p>
+        </div>
       </div>
 
       {/* Filters */}
-      <Card>
+      <div className='bg-white rounded-card shadow-card p-6'>
         <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
-          <Dropdown
+          <ResponsiveSelect
             label={t.transactions?.filterByAccount || 'Filter by Account'}
             value={filterAccountId}
             onChange={(value) => setFilterAccountId(value)}
@@ -394,7 +393,7 @@ export default function TransactionsClient() {
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterEndDate(e.target.value)}
           />
         </div>
-      </Card>
+      </div>
 
       {/* Transactions List */}
       {transactions.length === 0 ? (
@@ -474,24 +473,24 @@ export default function TransactionsClient() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={
-          <div className='flex items-center justify-between w-full'>
+          <div className='flex items-center justify-between w-full gap-3'>
             <span>
               {editingTransaction
                 ? t.transactions?.editTransaction || 'Edit Transaction'
                 : t.transactions?.addTransaction || 'Add Transaction'}
             </span>
             {!editingTransaction && (
-              <div className='flex gap-2'>
+              <div className='flex gap-3'>
                 <button
                   onClick={() => setShowReceiptScanner(!showReceiptScanner)}
-                  className='px-3 py-1 text-sm bg-sky-100 hover:bg-sky-200 text-sky-700 rounded-md transition-colors'
+                  className='px-3 py-1.5 text-sm bg-coral-100 hover:bg-coral-200 text-coral-700 rounded-md transition-colors'
                   type='button'
                 >
                   📸 Scan Receipt
                 </button>
                 <button
                   onClick={() => setUseQuickAdd(!useQuickAdd)}
-                  className='px-3 py-1 text-sm bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-md transition-colors'
+                  className='px-3 py-1.5 text-sm bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-md transition-colors'
                   type='button'
                 >
                   {useQuickAdd ? '📋 Form' : '✨ Quick Add'}
@@ -501,7 +500,7 @@ export default function TransactionsClient() {
           </div>
         }
         footer={
-          <>
+          <div className='flex gap-3 justify-end'>
             <Button
               variant='secondary'
               onClick={() => setIsModalOpen(false)}
@@ -515,7 +514,7 @@ export default function TransactionsClient() {
             >
               {editingTransaction ? t.common?.update || 'Update Transaction' : t.common?.add || 'Add Transaction'}
             </Button>
-          </>
+          </div>
         }
       >
         {showReceiptScanner ? (
@@ -535,7 +534,7 @@ export default function TransactionsClient() {
             </Button>
           </div>
         ) : useQuickAdd ? (
-          <div className='space-y-4'>
+          <div className='space-y-6'>
             <div className='p-3 bg-emerald-50 border border-emerald-200 rounded-lg'>
               <p className='text-sm text-emerald-800 mb-2'>
                 ✨ <strong>Quick Add:</strong> Describe your transaction in natural language
@@ -547,9 +546,9 @@ export default function TransactionsClient() {
             <NLPInput onParsed={handleNLPParsed} />
           </div>
         ) : (
-          <form className='space-y-4'>
+          <form className='space-y-5'>
             {/* Note: form wrapper kept for semantic HTML */}
-            <Dropdown
+            <ResponsiveSelect
               key='transaction-type'
               label={t.transactions?.type || 'Type'}
               value={formData.type}
@@ -561,7 +560,7 @@ export default function TransactionsClient() {
               ]}
             />
 
-            <Dropdown
+            <ResponsiveSelect
               key='transaction-account'
               label={formData.type === 'Transfer' ? t.transactions?.fromAccount || 'From Account' : t.transactions?.account || 'Account'}
               value={formData.accountId}
@@ -574,7 +573,7 @@ export default function TransactionsClient() {
             />
 
             {formData.type === 'Transfer' && (
-              <Dropdown
+              <ResponsiveSelect
                 key='transaction-to-account'
                 label={t.transactions?.toAccount || 'To Account'}
                 value={formData.toAccountId || ''}
@@ -590,7 +589,7 @@ export default function TransactionsClient() {
             )}
 
             {formData.type !== 'Transfer' && (
-              <Dropdown
+              <ResponsiveSelect
                 key='transaction-category'
                 label={t.transactions?.category || 'Category'}
                 value={formData.categoryId || ''}
@@ -633,8 +632,8 @@ export default function TransactionsClient() {
 
             {/* AI Category Suggestion */}
             {formData.type !== 'Transfer' && formData.notes && (
-              <div className='p-3 bg-purple-50 border border-purple-200 rounded-lg'>
-                <p className='text-sm font-medium text-purple-800 mb-2'>🤖 Smart Category Suggestion</p>
+              <div className='p-3 bg-coral-50 border border-coral-200 rounded-lg mt-1'>
+                <p className='text-sm font-medium text-coral-800 mb-2'>🤖 Smart Category Suggestion</p>
                 <CategorySuggestion
                   description={formData.notes}
                   type={formData.type === 'Income' ? 'income' : 'expense'}
@@ -643,17 +642,17 @@ export default function TransactionsClient() {
               </div>
             )}
 
-            <div className='flex items-center gap-2'>
+            <div className='flex items-center gap-2 pt-2'>
               <input
                 type='checkbox'
                 id='cleared-checkbox'
                 checked={formData.cleared || false}
                 onChange={(e) => setFormData({ ...formData, cleared: e.target.checked })}
-                className='w-4 h-4 text-sky-500 border-gray-300 rounded focus:ring-sky-500'
+                className='w-4 h-4 text-coral-500 border-gray-300 rounded focus:ring-coral-500'
               />
               <label
                 htmlFor='cleared-checkbox'
-                className='text-sm text-gray-700 dark:text-gray-300'
+                className='text-sm text-gray-700'
               >
                 ✓ {t.transactions?.cleared || 'Mark as cleared/reconciled'}
               </label>

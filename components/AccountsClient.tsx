@@ -1,11 +1,13 @@
 'use client'
 
-import { Badge, Button, Card, CardContent, Dropdown, EmptyState, Input, Modal, Spinner, Toast, ToastContainer } from '@/components/ui'
+import PageHeader from '@/components/PageHeader'
+import { Badge, Button, EmptyState, Input, Modal, ResponsiveSelect, Spinner, Toast, ToastContainer } from '@/components/ui'
 import type { Account } from '@/lib/db'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { createAccount, deleteAccount, getAccountBalance, getAllAccounts, updateAccount } from '@/lib/services/accounts'
+import type { AppSettings } from '@/lib/services/settings'
+import { formatCurrency, getSettings } from '@/lib/services/settings'
 import { createClient } from '@/lib/supabase/client'
-import { formatCurrency } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
@@ -35,6 +37,7 @@ export default function AccountsClient() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+  const [settings, setSettings] = useState<AppSettings | null>(null)
 
   // Form state
   const [name, setName] = useState('')
@@ -44,7 +47,17 @@ export default function AccountsClient() {
 
   useEffect(() => {
     loadAccounts()
+    loadSettings()
   }, [])
+
+  async function loadSettings() {
+    try {
+      const userSettings = await getSettings()
+      setSettings(userSettings)
+    } catch (error) {
+      console.error('Failed to load settings:', error)
+    }
+  }
 
   // Set up Realtime subscriptions for live updates
   useEffect(() => {
@@ -163,7 +176,7 @@ export default function AccountsClient() {
       <div className='flex items-center justify-center min-h-[50vh]'>
         <div className='text-center'>
           <Spinner size='lg' />
-          <p className='mt-4 text-gray-600 dark:text-gray-400'>{t.accounts?.loadingAccounts || 'Loading accounts...'}</p>
+          <p className='mt-4 text-gray-600'>{t.accounts?.loadingAccounts || 'Loading accounts...'}</p>
         </div>
       </div>
     )
@@ -172,9 +185,16 @@ export default function AccountsClient() {
   return (
     <>
       <div className='container mx-auto px-4 py-8'>
-        <div className='max-w-4xl mx-auto'>
-          <div className='flex justify-between items-center mb-6 pl-14 md:pl-0'>
-            <h2 className='text-3xl font-bold text-gray-900 dark:text-gray-100'>{t.accounts?.title || 'Accounts'}</h2>
+        <div className='max-w-6xl mx-auto'>
+          <PageHeader
+            title={t.accounts?.title || 'Accounts'}
+            description='Manage your financial accounts'
+          />
+
+          <div className='flex justify-between items-center mb-6'>
+            <div className='text-sm text-gray-600'>
+              {accounts.length} {accounts.length === 1 ? 'account' : 'accounts'}
+            </div>
             <Button
               variant='primary'
               onClick={openCreateModal}
@@ -188,74 +208,71 @@ export default function AccountsClient() {
           {/* Mobile FAB */}
           <button
             onClick={openCreateModal}
-            className='md:hidden fixed bottom-6 right-6 z-30 w-14 h-14 bg-sky-600 hover:bg-sky-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all'
+            className='md:hidden fixed bottom-6 right-6 z-30 w-14 h-14 bg-coral-400 hover:bg-coral-500 text-white rounded-full shadow-button hover:shadow-card flex items-center justify-center transition-all active:scale-95'
             aria-label={t.accounts?.newAccount || 'New Account'}
           >
             <span className='text-2xl'>+</span>
           </button>
 
           {accounts.length === 0 ? (
-            <Card>
-              <CardContent>
-                <EmptyState
-                  icon='💳'
-                  title={t.accounts?.noAccounts || 'No accounts yet'}
-                  description={t.accounts?.createFirstAccount || 'Create your first account to start tracking your finances!'}
-                  action={
-                    <Button
-                      variant='primary'
-                      onClick={openCreateModal}
-                    >
-                      {t.accounts?.createAccount || 'Create Account'}
-                    </Button>
-                  }
-                />
-              </CardContent>
-            </Card>
+            <div className='bg-white rounded-card shadow-card p-12'>
+              <EmptyState
+                icon='💳'
+                title={t.accounts?.noAccounts || 'No accounts yet'}
+                description={t.accounts?.createFirstAccount || 'Create your first account to start tracking your finances!'}
+                action={
+                  <Button
+                    variant='primary'
+                    onClick={openCreateModal}
+                  >
+                    {t.accounts?.createAccount || 'Create Account'}
+                  </Button>
+                }
+              />
+            </div>
           ) : (
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
               {accounts.map((account) => (
-                <Card key={account.id}>
-                  <CardContent>
-                    <div className='flex items-start justify-between mb-3'>
-                      <div className='flex items-center gap-3'>
-                        <span className='text-3xl'>{account.icon}</span>
-                        <div>
-                          <h3 className='font-semibold text-gray-900 dark:text-gray-100'>{account.name}</h3>
-                          <Badge variant='default'>{account.type}</Badge>
-                        </div>
+                <div
+                  key={account.id}
+                  className='bg-white rounded-card shadow-card hover:shadow-card-hover transition-all p-6'
+                >
+                  <div className='flex items-start justify-between mb-4'>
+                    <div className='flex items-center gap-3'>
+                      <div className='w-12 h-12 bg-gradient-to-br from-coral-400 to-coral-500 rounded-full flex items-center justify-center text-2xl shadow-soft'>
+                        {account.icon}
+                      </div>
+                      <div>
+                        <h3 className='font-bold text-gray-900 text-lg'>{account.name}</h3>
+                        <Badge variant='default'>{account.type}</Badge>
                       </div>
                     </div>
-                    <div className='mb-4'>
-                      <p className='text-sm text-gray-500 dark:text-gray-400 mb-1'>{t.accounts?.balance || 'Balance'}</p>
-                      <p
-                        className={`text-2xl font-bold ${
-                          account.balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                        }`}
-                      >
-                        {formatCurrency(account.balance, account.currency)}
-                      </p>
-                    </div>
-                    <div className='flex gap-2'>
-                      <Button
-                        variant='secondary'
-                        size='sm'
-                        fullWidth
-                        onClick={() => openEditModal(account)}
-                      >
-                        {t.common?.edit || 'Edit'}
-                      </Button>
-                      <Button
-                        variant='danger'
-                        size='sm'
-                        fullWidth
-                        onClick={() => handleDelete(account)}
-                      >
-                        {t.common?.delete || 'Delete'}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                  <div className='mb-6'>
+                    <p className='text-sm text-gray-500 mb-1'>{t.accounts?.balance || 'Balance'}</p>
+                    <p className={`text-3xl font-bold ${account.balance >= 0 ? 'text-chart-green' : 'text-chart-red'}`}>
+                      {formatCurrency(account.balance, settings?.currency)}
+                    </p>
+                  </div>
+                  <div className='flex gap-2'>
+                    <Button
+                      variant='secondary'
+                      size='sm'
+                      fullWidth
+                      onClick={() => openEditModal(account)}
+                    >
+                      {t.common?.edit || 'Edit'}
+                    </Button>
+                    <Button
+                      variant='danger'
+                      size='sm'
+                      fullWidth
+                      onClick={() => handleDelete(account)}
+                    >
+                      {t.common?.delete || 'Delete'}
+                    </Button>
+                  </div>
+                </div>
               ))}
             </div>
           )}
@@ -293,7 +310,7 @@ export default function AccountsClient() {
             onChange={(e) => setName(e.target.value)}
             fullWidth
           />
-          <Dropdown
+          <ResponsiveSelect
             key='account-type'
             label={t.accounts?.accountType || 'Account Type'}
             options={ACCOUNT_TYPES}
@@ -301,7 +318,7 @@ export default function AccountsClient() {
             onChange={(value) => setType(value as Account['type'])}
             fullWidth
           />
-          <Dropdown
+          <ResponsiveSelect
             key='account-currency'
             label={t.accounts?.currency || 'Currency'}
             options={CURRENCIES}
