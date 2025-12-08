@@ -69,6 +69,7 @@ export default function CategoriesClient() {
   const { t } = useTranslation()
   const [categories, setCategories] = useState<Category[]>([])
   const [settings, setSettings] = useState<AppSettings | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [formData, setFormData] = useState({
@@ -120,6 +121,8 @@ export default function CategoriesClient() {
     } catch (error) {
       console.error('Failed to load categories:', error)
       showToast('Failed to load categories', 'error')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -197,6 +200,17 @@ export default function CategoriesClient() {
 
   const incomeCategories = categories.filter((c) => c.type === 'income')
   const expenseCategories = categories.filter((c) => c.type === 'expense')
+
+  if (isLoading) {
+    return (
+      <div className='flex items-center justify-center min-h-[50vh]'>
+        <div className='text-center'>
+          <div className='w-12 h-12 border-4 border-coral-500 border-t-transparent rounded-full animate-spin mx-auto mb-4' />
+          <p className='text-gray-600'>{t.categories?.loadingCategories || 'Loading categories...'}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className='space-y-8'>
