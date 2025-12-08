@@ -109,7 +109,9 @@ export async function deleteAccount(id: string): Promise<void> {
 
 export async function getAccountBalance(accountId: string): Promise<number> {
   // Calculate balance from IndexedDB transactions
-  const transactions = await db.transactions.filter((tx) => !tx.deleted && (tx.accountId === accountId || tx.toAccountId === accountId)).toArray()
+  const transactions = await db.transactions
+    .filter((tx) => !tx.deleted && (tx.accountId === accountId || tx.toAccountId === accountId))
+    .toArray()
 
   let balance = 0
 

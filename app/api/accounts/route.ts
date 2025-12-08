@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const supabase = await getSupabaseServerClient()
     const body = await request.json()
 
-    const { name, type, currency, icon } = body
+    const { name, type, currency, icon, device_id } = body
 
     if (!name || !type || !currency) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
       currency,
       icon: icon || getDefaultIcon(type),
       deleted: false,
+      device_id: device_id || null,
       created_at: now,
       updated_at: now,
     }

@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     console.log('Transaction POST body:', body)
 
-    const { account_id, category_id, type, amount, currency, notes, date, recurring, to_account_id } = body
+    const { account_id, category_id, type, amount, currency, notes, date, recurring, to_account_id, device_id } = body
 
     if (!account_id || !type || !amount || !date) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
       recurring: recurring || false,
       to_account_id: to_account_id || null,
       deleted: false,
+      device_id: device_id || null,
       created_at: now,
       updated_at: now,
     }

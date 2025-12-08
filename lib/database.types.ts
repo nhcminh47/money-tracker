@@ -14,6 +14,7 @@ export interface Database {
           created_at: string
           updated_at: string
           deleted: boolean
+          device_id: string | null
         }
         Insert: {
           id?: string
@@ -25,6 +26,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
           deleted?: boolean
+          device_id?: string | null
         }
         Update: {
           id?: string
@@ -36,6 +38,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
           deleted?: boolean
+          device_id?: string | null
         }
       }
       transactions: {
@@ -55,6 +58,7 @@ export interface Database {
           deleted: boolean
           created_at: string
           updated_at: string
+          device_id: string | null
         }
         Insert: {
           id?: string
@@ -72,6 +76,7 @@ export interface Database {
           deleted?: boolean
           created_at?: string
           updated_at?: string
+          device_id?: string | null
         }
         Update: {
           id?: string
@@ -89,6 +94,7 @@ export interface Database {
           deleted?: boolean
           created_at?: string
           updated_at?: string
+          device_id?: string | null
         }
       }
       categories: {
@@ -103,6 +109,7 @@ export interface Database {
           deleted: boolean
           created_at: string
           updated_at: string
+          device_id: string | null
         }
         Insert: {
           id?: string
@@ -115,6 +122,7 @@ export interface Database {
           deleted?: boolean
           created_at?: string
           updated_at?: string
+          device_id?: string | null
         }
         Update: {
           id?: string
@@ -127,6 +135,7 @@ export interface Database {
           deleted?: boolean
           created_at?: string
           updated_at?: string
+          device_id?: string | null
         }
       }
       budgets: {
@@ -139,6 +148,7 @@ export interface Database {
           deleted: boolean
           created_at: string
           updated_at: string
+          device_id: string | null
         }
         Insert: {
           id?: string
@@ -149,6 +159,7 @@ export interface Database {
           deleted?: boolean
           created_at?: string
           updated_at?: string
+          device_id?: string | null
         }
         Update: {
           id?: string
@@ -159,6 +170,7 @@ export interface Database {
           deleted?: boolean
           created_at?: string
           updated_at?: string
+          device_id?: string | null
         }
       }
       settings: {
