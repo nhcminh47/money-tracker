@@ -1,23 +1,26 @@
-import { InputHTMLAttributes, forwardRef, useId } from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils'
+import { InputHTMLAttributes, forwardRef, useId } from 'react'
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
-  fullWidth?: boolean;
+  label?: string
+  error?: string
+  fullWidth?: boolean
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, error, fullWidth = true, type = 'text', id: providedId, ...props }, ref) => {
     // Use provided id or generate a stable one with useId
-    const generatedId = useId();
-    const id = providedId || generatedId;
-    const errorId = `${id}-error`;
+    const generatedId = useId()
+    const id = providedId || generatedId
+    const errorId = `${id}-error`
 
     return (
       <div className={cn('space-y-2', fullWidth && 'w-full')}>
         {label && (
-          <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            htmlFor={id}
+            className='block text-sm font-medium text-gray-700'
+          >
             {label}
           </label>
         )}
@@ -26,29 +29,32 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           id={id}
           type={type}
           className={cn(
-            'px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100',
-            'focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent',
-            'disabled:opacity-50 disabled:cursor-not-allowed',
-            error
-              ? 'border-red-500 dark:border-red-500'
-              : 'border-gray-300 dark:border-gray-600',
+            'px-4 py-2.5 border rounded-input bg-white text-gray-900',
+            'focus:outline-none focus:ring-2 focus:ring-coral-400 focus:border-coral-400',
+            'disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-50',
+            'transition-all duration-200 shadow-soft focus:shadow-md',
+            error ? 'border-chart-red focus:ring-chart-red' : 'border-gray-200',
             fullWidth && 'w-full',
-            className
+            className,
           )}
           aria-invalid={error ? 'true' : 'false'}
           aria-describedby={error ? errorId : undefined}
           {...props}
         />
         {error && (
-          <p id={errorId} className="text-sm text-red-600 dark:text-red-400" role="alert">
+          <p
+            id={errorId}
+            className='text-sm text-chart-red'
+            role='alert'
+          >
             {error}
           </p>
         )}
       </div>
-    );
-  }
-);
+    )
+  },
+)
 
-Input.displayName = 'Input';
+Input.displayName = 'Input'
 
-export { Input };
+export { Input }

@@ -4,58 +4,106 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 18%;
-    --notion-bg: #FFFFFF;
-    --notion-text-primary: #2F2F2F;
-    --notion-text-secondary: #6B6B6B;
-    --notion-border: #E5E5E5;
-    --notion-accent: #0F6FFF;
-    --notion-hover: #F7F7F7;
-    --notion-danger: #E03E3E;
-    --notion-success: #2EAADC;
-    --notion-neutral: #F0F0F0;
-  }
+    /* Design System Colors */
+    --coral-bg: #f4c4a8;
+    --coral-accent: #e8b5a0;
+    --coral-dark: #d9a088;
+    --cream: #f5ede4;
+    --soft-white: #ffffff;
 
-  .dark {
-    --background: 0 0% 10%;
-    --foreground: 0 0% 95%;
-    --notion-bg: #191919;
-    --notion-text-primary: #E5E5E5;
-    --notion-text-secondary: #9B9B9B;
-    --notion-border: #2F2F2F;
-    --notion-hover: #2F2F2F;
+    /* Text Colors */
+    --text-dark: #2d2d2d;
+    --text-medium: #5a5a5a;
+    --text-muted: #9b9b9b;
+    --text-light: #c4c4c4;
+
+    /* Accent Colors */
+    --chart-yellow: #ffb84d;
+    --success-green: #6dd4a8;
+    --info-blue: #5b9dd9;
+    --warning-red: #ff6b6b;
+    --purple-accent: #b88dc9;
+
+    /* Backgrounds */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9f9f9;
+    --bg-gradient-start: #f4c4a8;
+    --bg-gradient-end: #f8d4c0;
+
+    /* Borders & Shadows */
+    --border-light: #e8e8e8;
+    --border-medium: #d0d0d0;
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.08);
+
+    /* Border Radius */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-2xl: 32px;
+    --radius-full: 9999px;
   }
 }
 
 @layer base {
   * {
-    @apply border-notion-border;
+    @apply border-gray-200;
   }
   body {
-    @apply bg-white text-notion-text-primary;
-  }
-  .dark body {
-    @apply bg-[#191919];
-  }
-}
-
-:root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f172a;
-    --foreground: #f1f5f9;
+    @apply bg-white text-gray-900;
   }
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography Scale */
+.text-display {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.text-h1 {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.text-h2 {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.text-h3 {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.text-body-lg {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.text-body {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.text-small {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
 }
 
 /* Better select option styling */
@@ -72,40 +120,17 @@ select option {
   margin: 2px 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  select option {
-    background-color: #1f2937;
-    color: #e5e7eb;
-  }
-}
-
 select option:hover,
 select option:focus {
-  background: linear-gradient(to right, #f0f9ff, #e0f2fe);
-  color: #0369a1;
+  background: linear-gradient(to right, #fff5f0, #ffe8dd);
+  color: #d9a088;
   outline: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  select option:hover,
-  select option:focus {
-    background: linear-gradient(to right, #0c4a6e, #075985);
-    color: #bae6fd;
-  }
-}
-
 select option:checked {
-  background: linear-gradient(to right, #dbeafe, #bae6fd);
-  color: #0c4a6e;
+  background: linear-gradient(to right, #f8d4c0, #f4c4a8);
+  color: #2d2d2d;
   font-weight: 500;
-}
-
-@media (prefers-color-scheme: dark) {
-  select option:checked {
-    background: linear-gradient(to right, #075985, #0369a1);
-    color: #e0f2fe;
-    font-weight: 500;
-  }
 }
 
 @keyframes slideUp {
@@ -134,4 +159,15 @@ select option:checked {
 
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
+}
+
+/* Hide scrollbar */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
