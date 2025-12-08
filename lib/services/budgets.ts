@@ -1,22 +1,62 @@
 import type { Budget } from '@/lib/db'
 import { db } from '@/lib/db'
+import { triggerBackgroundSync } from './sync'
+
+// Helper to save to changelog for offline sync
+async function saveToChangelog(entity: string, entityId: string, operation: 'create' | 'update' | 'delete', data: any): Promise<void> {
+  const deviceId =
+    typeof window !== 'undefined'
+      ? localStorage.getItem('deviceId') ||
+        (() => {
+          const id = crypto.randomUUID()
+          localStorage.setItem('deviceId', id)
+          return id
+        })()
+      : 'server'
+
+  await db.changelog.add({
+    id: crypto.randomUUID(),
+    entity,
+    entityId,
+    op: operation,
+    payload: data,
+    timestamp: new Date().toISOString(),
+    deviceId,
+  })
+}
 
 /**
  * Create a new budget
+ * ONE-WAY FLOW: IndexedDB → Changelog → Background Sync
  */
 export async function createBudget(categoryId: string, amount: number, period: 'monthly' | 'yearly' = 'monthly'): Promise<Budget> {
-  const response = await fetch('/api/budgets', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ category_id: categoryId, amount, period }),
-  })
+  const now = new Date().toISOString()
+  const startOfMonth = new Date()
+  startOfMonth.setDate(1)
+  startOfMonth.setHours(0, 0, 0, 0)
 
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Failed to create budget')
+  const budget: Budget = {
+    id: crypto.randomUUID(),
+    categoryId,
+    amount,
+    period,
+    startDate: startOfMonth.toISOString(),
+    endDate: undefined,
+    createdAt: now,
+    updatedAt: now,
   }
 
-  return await response.json()
+  // 1. Write to IndexedDB first (single source of truth)
+  await db.budgets.add(budget)
+
+  // 2. Add to changelog for background sync
+  await saveToChangelog('budget', budget.id, 'create', budget)
+
+  // 3. Trigger background sync (debounced)
+  triggerBackgroundSync()
+
+  // 4. Return immediately
+  return budget
 }
 
 /**
@@ -26,44 +66,57 @@ export async function updateBudget(
   id: string,
   updates: Partial<Omit<Budget, 'id' | 'createdAt' | 'updatedAt'>>,
 ): Promise<Budget | undefined> {
-  const response = await fetch(`/api/budgets/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(updates),
-  })
-
-  if (!response.ok) {
-    return undefined
+  // 1. Get existing budget from IndexedDB
+  const existing = await db.budgets.get(id)
+  if (!existing) {
+    throw new Error('Budget not found')
   }
 
-  return await response.json()
+  // 2. Merge updates with existing data
+  const updated: Budget = {
+    ...existing,
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  }
+
+  // 3. Write to IndexedDB first
+  await db.budgets.put(updated)
+
+  // 4. Add to changelog for background sync
+  await saveToChangelog('budget', id, 'update', updated)
+
+  // 5. Trigger background sync (debounced)
+  triggerBackgroundSync()
+
+  return updated
 }
 
 /**
  * Delete a budget
  */
 export async function deleteBudget(id: string): Promise<void> {
-  const response = await fetch(`/api/budgets/${id}`, {
-    method: 'DELETE',
-  })
-
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Failed to delete budget')
+  // 1. Verify budget exists
+  const existing = await db.budgets.get(id)
+  if (!existing) {
+    throw new Error('Budget not found')
   }
+
+  // 2. Delete from IndexedDB first
+  await db.budgets.delete(id)
+
+  // 3. Add to changelog for background sync
+  await saveToChangelog('budget', id, 'delete', { id })
+
+  // 4. Trigger background sync (debounced)
+  triggerBackgroundSync()
 }
 
 /**
  * Get all budgets
  */
 export async function getAllBudgets(): Promise<Budget[]> {
-  const response = await fetch('/api/budgets')
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch budgets')
-  }
-
-  return await response.json()
+  // Always read from IndexedDB (single source of truth)
+  return await db.budgets.toArray()
 }
 
 /**

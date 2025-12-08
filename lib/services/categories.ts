@@ -1,11 +1,36 @@
 import { db, type Category } from '@/lib/db'
+import { triggerBackgroundSync } from './sync'
 
 /**
  * Category service - handles all category-related operations
+ * ONE-WAY FLOW: IndexedDB → Changelog → Background Sync
  */
 
 // Re-export Category type
 export type { Category } from '@/lib/db'
+
+// Helper to save to changelog for offline sync
+async function saveToChangelog(entity: string, entityId: string, operation: 'create' | 'update' | 'delete', data: any): Promise<void> {
+  const deviceId =
+    typeof window !== 'undefined'
+      ? localStorage.getItem('deviceId') ||
+        (() => {
+          const id = crypto.randomUUID()
+          localStorage.setItem('deviceId', id)
+          return id
+        })()
+      : 'server'
+
+  await db.changelog.add({
+    id: crypto.randomUUID(),
+    entity,
+    entityId,
+    op: operation,
+    payload: data,
+    timestamp: new Date().toISOString(),
+    deviceId,
+  })
+}
 
 export async function createCategory(data: {
   name: string
@@ -14,24 +39,29 @@ export async function createCategory(data: {
   icon: string
   parentId?: string | null
 }): Promise<Category> {
-  const response = await fetch('/api/categories', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      name: data.name,
-      type: data.type,
-      color: data.color,
-      icon: data.icon,
-      parent_id: data.parentId || null,
-    }),
-  })
-
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Failed to create category')
+  const now = new Date().toISOString()
+  const category: Category = {
+    id: crypto.randomUUID(),
+    name: data.name,
+    type: data.type,
+    color: data.color,
+    icon: data.icon,
+    parentId: data.parentId || null,
+    createdAt: now,
+    updatedAt: now,
   }
 
-  return await response.json()
+  // 1. Write to IndexedDB first (single source of truth)
+  await db.categories.add(category)
+
+  // 2. Add to changelog for background sync
+  await saveToChangelog('category', category.id, 'create', category)
+
+  // 3. Trigger background sync (debounced)
+  triggerBackgroundSync()
+
+  // 4. Return immediately
+  return category
 }
 
 export async function getCategory(id: string): Promise<Category | undefined> {
@@ -39,13 +69,8 @@ export async function getCategory(id: string): Promise<Category | undefined> {
 }
 
 export async function getAllCategories(): Promise<Category[]> {
-  const response = await fetch('/api/categories')
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch categories')
-  }
-
-  return await response.json()
+  // Always read from IndexedDB (single source of truth)
+  return await db.categories.toArray()
 }
 
 export async function getCategoriesByType(type: 'income' | 'expense'): Promise<Category[]> {
@@ -53,34 +78,50 @@ export async function getCategoriesByType(type: 'income' | 'expense'): Promise<C
 }
 
 export async function updateCategory(id: string, updates: Partial<Omit<Category, 'id' | 'createdAt' | 'updatedAt'>>): Promise<void> {
-  const response = await fetch(`/api/categories/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(updates),
-  })
-
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Failed to update category')
+  // 1. Get existing category from IndexedDB
+  const existing = await db.categories.get(id)
+  if (!existing) {
+    throw new Error('Category not found')
   }
+
+  // 2. Merge updates with existing data
+  const updated: Category = {
+    ...existing,
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  }
+
+  // 3. Write to IndexedDB first
+  await db.categories.put(updated)
+
+  // 4. Add to changelog for background sync
+  await saveToChangelog('category', id, 'update', updated)
+
+  // 5. Trigger background sync (debounced)
+  triggerBackgroundSync()
 }
 
 export async function deleteCategory(id: string): Promise<void> {
-  const response = await fetch(`/api/categories/${id}`, {
-    method: 'DELETE',
-  })
-
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Failed to delete category')
+  // 1. Verify category exists
+  const existing = await db.categories.get(id)
+  if (!existing) {
+    throw new Error('Category not found')
   }
 
-  // Check if category has child categories
+  // 2. Check if category has child categories
   const childCount = await db.categories.where('parentId').equals(id).count()
-
   if (childCount > 0) {
     throw new Error('Cannot delete category with subcategories')
   }
+
+  // 3. Delete from IndexedDB first
+  await db.categories.delete(id)
+
+  // 4. Add to changelog for background sync
+  await saveToChangelog('category', id, 'delete', { id })
+
+  // 5. Trigger background sync (debounced)
+  triggerBackgroundSync()
 }
 
 export async function getSubcategories(parentId: string): Promise<Category[]> {
