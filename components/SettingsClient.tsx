@@ -266,20 +266,6 @@ export default function SettingsClient() {
               </select>
             </div>
 
-            {/* Theme */}
-            <div>
-              <label className='block text-sm font-medium text-gray-700 mb-2'>{t.settings.theme}</label>
-              <select
-                value={settings.theme}
-                onChange={(e) => handleSettingChange('theme', e.target.value as AppSettings['theme'])}
-                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coral-400 focus:border-coral-400'
-              >
-                <option value='auto'>{t.settings.themeAuto}</option>
-                <option value='light'>{t.settings.themeLight}</option>
-                <option value='dark'>{t.settings.themeDark}</option>
-              </select>
-            </div>
-
             {/* Language */}
             <div>
               <label className='block text-sm font-medium text-gray-700 mb-2'>{t.settings.language}</label>
