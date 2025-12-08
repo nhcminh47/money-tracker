@@ -2,6 +2,7 @@ import { InstallPrompt } from '@/components/InstallPrompt'
 import { NetworkStatus } from '@/components/NetworkStatus'
 import { OfflineIndicator } from '@/components/OfflineIndicator'
 import { StorageManager } from '@/components/StorageManager'
+import { SyncManager } from '@/components/SyncManager'
 import { SyncStatus } from '@/components/SyncStatus'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { UpdateNotification } from '@/components/UpdateNotification'
@@ -72,6 +73,7 @@ export default function RootLayout({
       <body className={`${inter.variable} antialiased font-sans`}>
         <ThemeProvider>
           <AuthProvider>
+            <SyncManager />
             <StorageManager />
             <OfflineIndicator />
             <NetworkStatus />

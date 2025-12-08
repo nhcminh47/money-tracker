@@ -1,17 +1,16 @@
 import { db, type Transaction } from '@/lib/db'
+import { triggerBackgroundSync } from './sync'
 
 /**
  * Transaction service - handles all transaction-related operations
- * Uses BFF API routes with offline fallback
+ * ARCHITECTURE: One-way flow - always write to IndexedDB first, sync in background
+ * - All writes go to IndexedDB immediately (single source of truth)
+ * - Background sync handles cloud synchronization
+ * - No direct API calls from service layer
  */
 
 // Re-export Transaction type
 export type { Transaction } from '@/lib/db'
-
-// Helper to check if online
-function isOnline(): boolean {
-  return typeof navigator !== 'undefined' && navigator.onLine
-}
 
 // Helper to save to changelog for offline sync
 async function saveToChangelog(entity: string, entityId: string, operation: 'create' | 'update' | 'delete', data: any): Promise<void> {
@@ -96,41 +95,17 @@ export async function createTransaction(data: {
     throw new Error('Only Transfer transactions can have a destination account')
   }
 
-  if (isOnline()) {
-    // Online: Call BFF API
-    try {
-      const response = await fetch('/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          account_id: transaction.accountId,
-          category_id: transaction.categoryId,
-          type: transaction.type.toLowerCase(),
-          amount: transaction.amount,
-          currency: transaction.currency,
-          notes: transaction.notes,
-          date: transaction.date,
-          recurring: transaction.recurring,
-          to_account_id: transaction.toAccountId,
-        }),
-      })
+  // ONE-WAY FLOW: Always write to IndexedDB first (single source of truth)
+  await db.transactions.add(transaction)
 
-      if (!response.ok) {
-        throw new Error('Failed to create transaction')
-      }
+  // Add to changelog for background sync
+  await saveToChangelog('transaction', transaction.id, 'create', transaction)
 
-      return await response.json()
-    } catch (error) {
-      console.error('Failed to create transaction online, saving offline:', error)
-      // Fallback to offline
-      await saveToChangelog('transaction', transaction.id, 'create', transaction)
-      return transaction
-    }
-  } else {
-    // Offline: Save to changelog
-    await saveToChangelog('transaction', transaction.id, 'create', transaction)
-    return transaction
-  }
+  // Trigger background sync (debounced, non-blocking)
+  triggerBackgroundSync()
+
+  // Return immediately - UI shows data right away
+  return transaction
 }
 
 export async function getTransaction(id: string): Promise<Transaction | undefined> {
@@ -138,36 +113,7 @@ export async function getTransaction(id: string): Promise<Transaction | undefine
 }
 
 export async function getAllTransactions(includeDeleted: boolean = false): Promise<Transaction[]> {
-  if (isOnline()) {
-    // Online: Fetch from BFF API
-    try {
-      const response = await fetch('/api/transactions')
-      if (response.ok) {
-        const data = await response.json()
-        // Convert snake_case to camelCase
-        return data.map((tx: any) => ({
-          id: tx.id,
-          accountId: tx.account_id,
-          amount: tx.amount,
-          currency: tx.currency || 'USD',
-          categoryId: tx.category_id,
-          type: (tx.type.charAt(0).toUpperCase() + tx.type.slice(1)) as Transaction['type'],
-          toAccountId: tx.to_account_id,
-          notes: tx.notes || '',
-          date: tx.date,
-          cleared: tx.cleared || false,
-          recurring: tx.recurring || false,
-          createdAt: tx.created_at,
-          updatedAt: tx.updated_at,
-          deleted: tx.deleted || false,
-        }))
-      }
-    } catch (error) {
-      console.error('Failed to fetch transactions online:', error)
-    }
-  }
-
-  // Fallback to IndexedDB
+  // ONE-WAY FLOW: Always read from IndexedDB (single source of truth)
   if (includeDeleted) {
     return await db.transactions.orderBy('date').reverse().toArray()
   }
@@ -227,90 +173,63 @@ export async function updateTransaction(id: string, updates: Partial<Omit<Transa
     throw new Error('Transfer transactions must have a destination account')
   }
 
-  if (isOnline()) {
-    // Online: Call BFF API
-    try {
-      const response = await fetch(`/api/transactions/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          account_id: updates.accountId,
-          category_id: updates.categoryId,
-          type: updates.type?.toLowerCase(),
-          amount: updates.amount,
-          currency: updates.currency,
-          notes: updates.notes,
-          date: updates.date,
-          recurring: updates.recurring,
-          to_account_id: updates.toAccountId,
-          cleared: updates.cleared,
-        }),
-      })
+  // ONE-WAY FLOW: Always update IndexedDB first
+  const existing = await db.transactions.get(id)
+  if (!existing) throw new Error('Transaction not found')
 
-      if (!response.ok) {
-        throw new Error('Failed to update transaction')
-      }
-    } catch (error) {
-      console.error('Failed to update transaction online, saving offline:', error)
-      // Fallback to offline
-      await saveToChangelog('transaction', id, 'update', { id, ...updates })
-    }
-  } else {
-    // Offline: Save to changelog
-    await saveToChangelog('transaction', id, 'update', { id, ...updates })
+  const updated = {
+    ...existing,
+    ...updates,
+    updatedAt: new Date().toISOString(),
   }
+
+  await db.transactions.put(updated)
+
+  // Add to changelog for background sync
+  await saveToChangelog('transaction', id, 'update', updated)
+
+  // Trigger background sync
+  triggerBackgroundSync()
 }
 
 export async function deleteTransaction(id: string, hardDelete: boolean = false): Promise<void> {
-  if (isOnline()) {
-    // Online: Call BFF API
-    try {
-      const response = await fetch(`/api/transactions/${id}`, {
-        method: 'DELETE',
-      })
+  // ONE-WAY FLOW: Always update IndexedDB first (soft delete)
+  const existing = await db.transactions.get(id)
+  if (!existing) throw new Error('Transaction not found')
 
-      if (!response.ok) {
-        throw new Error('Failed to delete transaction')
-      }
-    } catch (error) {
-      console.error('Failed to delete transaction online, saving offline:', error)
-      // Fallback to offline
-      await saveToChangelog('transaction', id, 'delete', { id })
-    }
-  } else {
-    // Offline: Save to changelog
-    await saveToChangelog('transaction', id, 'delete', { id })
+  const deleted = {
+    ...existing,
+    deleted: true,
+    updatedAt: new Date().toISOString(),
   }
+
+  await db.transactions.put(deleted)
+
+  // Add to changelog for background sync
+  await saveToChangelog('transaction', id, 'delete', deleted)
+
+  // Trigger background sync
+  triggerBackgroundSync()
 }
 
 export async function toggleCleared(id: string): Promise<void> {
-  if (isOnline()) {
-    // Online: Get transaction and toggle
-    try {
-      const response = await fetch(`/api/transactions/${id}`)
-      if (!response.ok) throw new Error('Transaction not found')
+  // ONE-WAY FLOW: Always get from and update IndexedDB first
+  const transaction = await db.transactions.get(id)
+  if (!transaction) throw new Error('Transaction not found')
 
-      const transaction = await response.json()
-      const cleared = !transaction.cleared
-
-      const updateResponse = await fetch(`/api/transactions/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cleared }),
-      })
-
-      if (!updateResponse.ok) {
-        throw new Error('Failed to toggle cleared status')
-      }
-    } catch (error) {
-      console.error('Failed to toggle cleared online, saving offline:', error)
-      // Fallback to offline
-      await saveToChangelog('transaction', id, 'update', { id, cleared: true })
-    }
-  } else {
-    // Offline: Save to changelog (assume toggle to true)
-    await saveToChangelog('transaction', id, 'update', { id, cleared: true })
+  const updated = {
+    ...transaction,
+    cleared: !transaction.cleared,
+    updatedAt: new Date().toISOString(),
   }
+
+  await db.transactions.put(updated)
+
+  // Add to changelog for background sync
+  await saveToChangelog('transaction', id, 'update', updated)
+
+  // Trigger background sync
+  triggerBackgroundSync()
 }
 
 export interface TransactionSummary {

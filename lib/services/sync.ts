@@ -26,9 +26,33 @@ let syncStatus: SyncStatus = {
   error: null,
 }
 
+let syncDebounceTimer: NodeJS.Timeout | null = null
+let isSyncRunning = false
+let realtimeChannel: any = null
+
 // Get current sync status
 export function getSyncStatus(): SyncStatus {
   return { ...syncStatus }
+}
+
+/**
+ * Trigger background sync (debounced to avoid excessive calls)
+ * This is called after every write operation
+ */
+export function triggerBackgroundSync(): void {
+  // Clear existing timer
+  if (syncDebounceTimer) {
+    clearTimeout(syncDebounceTimer)
+  }
+
+  // Debounce: wait 5 seconds after last write before syncing
+  syncDebounceTimer = setTimeout(() => {
+    if (!isSyncRunning) {
+      sync().catch((error) => {
+        console.error('Background sync failed:', error)
+      })
+    }
+  }, 5000) // 5 second debounce
 }
 
 // Check if user is authenticated
@@ -38,6 +62,178 @@ export async function isAuthenticated(): Promise<boolean> {
     data: { user },
   } = await supabase.auth.getUser()
   return !!user
+}
+
+/**
+ * Initialize auto-sync listeners
+ * This should be called once when the app loads
+ */
+export function initializeBackgroundSync(): void {
+  if (typeof window === 'undefined') return
+
+  console.log('Initializing background sync...')
+
+  // 1. Sync on network reconnect
+  window.addEventListener('online', () => {
+    console.log('Network reconnected, triggering sync...')
+    triggerBackgroundSync()
+  })
+
+  // 2. Sync when user returns to tab (visibility change)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      console.log('Tab became visible, checking for sync...')
+      checkAndSync()
+    }
+  })
+
+  // 3. Periodic sync every 30 seconds (if has pending changes)
+  setInterval(() => {
+    checkAndSync()
+  }, 30000) // 30 seconds
+
+  // 4. WebSocket/Realtime for multi-device sync
+  initializeRealtimeSync()
+
+  // 5. Sync on page load (initial sync)
+  checkAndSync()
+
+  console.log('Background sync initialized')
+}
+
+/**
+ * Check if sync is needed and trigger if conditions are met
+ */
+async function checkAndSync(): Promise<void> {
+  // Don't sync if already syncing
+  if (isSyncRunning) {
+    console.log('Sync already running, skipping...')
+    return
+  }
+
+  // Don't sync if not authenticated
+  if (!(await isAuthenticated())) {
+    console.log('Not authenticated, skipping sync')
+    return
+  }
+
+  // Don't sync if offline
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    console.log('Offline, skipping sync')
+    return
+  }
+
+  // Check if there are pending changes
+  const pendingChanges = await db.changelog.count()
+  if (pendingChanges === 0) {
+    console.log('No pending changes, skipping sync')
+    return
+  }
+
+  console.log(`Found ${pendingChanges} pending changes, starting sync...`)
+  await sync()
+}
+
+/**
+ * Initialize Supabase Realtime for instant multi-device sync
+ * When another device makes changes, this device will receive notifications
+ */
+function initializeRealtimeSync(): void {
+  if (typeof window === 'undefined') return
+
+  const supabase = createClient()
+
+  // Subscribe to all tables for changes
+  realtimeChannel = supabase
+    .channel('all-changes')
+    .on(
+      'postgres_changes',
+      {
+        event: '*', // INSERT, UPDATE, DELETE
+        schema: 'public',
+        table: 'transactions',
+      },
+      (payload) => {
+        console.log('Realtime: Transaction changed', payload)
+        handleRealtimeChange(payload)
+      },
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'accounts',
+      },
+      (payload) => {
+        console.log('Realtime: Account changed', payload)
+        handleRealtimeChange(payload)
+      },
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'categories',
+      },
+      (payload) => {
+        console.log('Realtime: Category changed', payload)
+        handleRealtimeChange(payload)
+      },
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'budgets',
+      },
+      (payload) => {
+        console.log('Realtime: Budget changed', payload)
+        handleRealtimeChange(payload)
+      },
+    )
+    .subscribe()
+
+  console.log('Realtime sync initialized')
+}
+
+/**
+ * Handle realtime change event from Supabase
+ * Trigger immediate sync to pull changes from other devices
+ */
+function handleRealtimeChange(payload: any): void {
+  // Check if this change came from this device (to avoid echo)
+  const deviceId = localStorage.getItem('deviceId')
+
+  // If the change has device_id and it matches ours, skip
+  // (This means we already have this change locally)
+  if (payload.new?.device_id === deviceId || payload.old?.device_id === deviceId) {
+    console.log('Realtime: Change from this device, skipping sync')
+    return
+  }
+
+  console.log('Realtime: Change from another device, triggering immediate sync')
+
+  // Trigger immediate sync (no debounce for realtime events)
+  if (!isSyncRunning) {
+    sync().catch((error) => {
+      console.error('Realtime sync failed:', error)
+    })
+  }
+}
+
+/**
+ * Cleanup realtime subscription
+ */
+export function cleanupRealtimeSync(): void {
+  if (realtimeChannel) {
+    const supabase = createClient()
+    supabase.removeChannel(realtimeChannel)
+    realtimeChannel = null
+    console.log('Realtime sync cleaned up')
+  }
 }
 
 // Push local changes to Supabase
@@ -227,29 +423,65 @@ async function pullEntityChanges(supabase: any, tableName: string, since: string
 
 // Full sync: push then pull
 export async function sync(): Promise<void> {
+  if (isSyncRunning) {
+    console.log('Sync already in progress')
+    return
+  }
+
   if (!(await isAuthenticated())) {
     console.log('Skipping sync: user not authenticated')
     return
   }
 
+  isSyncRunning = true
+  syncStatus.isSyncing = true
+
   try {
+    // 1. Push local changes (from changelog) to Supabase
+    console.log('Pushing local changes...')
     await pushChanges()
+
+    // 2. Pull remote changes to IndexedDB
+    console.log('Pulling remote changes...')
     await pullChanges()
+
+    // 3. Update sync status
+    syncStatus.lastSync = new Date().toISOString()
+    syncStatus.pendingChanges = 0
+    syncStatus.error = null
+
+    // Save last sync time to storage
+    await db.meta.put({ key: 'lastSyncTime', value: syncStatus.lastSync })
+
+    console.log('Sync completed successfully')
   } catch (error) {
     console.error('Sync failed:', error)
+    syncStatus.error = error instanceof Error ? error.message : 'Sync failed'
     throw error
+  } finally {
+    isSyncRunning = false
+    syncStatus.isSyncing = false
   }
 }
 
-// Auto-sync on visibility change (when user returns to tab)
+/**
+ * Manually trigger sync (for "Sync Now" button in UI)
+ */
+export async function manualSync(): Promise<void> {
+  console.log('Manual sync triggered')
+  await sync()
+}
+
+// Load last sync time from storage on initialization
 if (typeof window !== 'undefined') {
-  // Load last sync time from storage
   db.meta.get('lastSyncTime').then((meta) => {
     if (meta?.value) {
       syncStatus.lastSync = meta.value
     }
   })
 
+  // Legacy visibility listener (now handled by initializeBackgroundSync)
+  // Keeping for backwards compatibility
   document.addEventListener('visibilitychange', async () => {
     if (!document.hidden && (await isAuthenticated())) {
       try {

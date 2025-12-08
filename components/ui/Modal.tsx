@@ -62,38 +62,38 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }:
           tabIndex={-1}
           className={cn(
             'relative bg-white rounded-card shadow-card-hover w-full max-h-[90vh] flex flex-col animate-slide-up focus:outline-none pointer-events-auto',
-            sizes[size]
+            sizes[size],
           )}
         >
-        {/* Header */}
-        {title && (
-          <div className='flex items-center justify-between p-6 border-b border-cream-300'>
-            <h2
-              id='modal-title'
-              className='text-xl font-bold text-gray-900'
-            >
-              {title}
-            </h2>
-            <button
-              onClick={onClose}
-              aria-label='Close modal'
-              className='w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all'
-            >
-              <span
-                aria-hidden='true'
-                className='text-2xl'
+          {/* Header */}
+          {title && (
+            <div className='flex items-center justify-between p-6 border-b border-cream-300'>
+              <h2
+                id='modal-title'
+                className='text-xl font-bold text-gray-900'
               >
-                ×
-              </span>
-            </button>
-          </div>
-        )}
+                {title}
+              </h2>
+              <button
+                onClick={onClose}
+                aria-label='Close modal'
+                className='w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all'
+              >
+                <span
+                  aria-hidden='true'
+                  className='text-2xl'
+                >
+                  ×
+                </span>
+              </button>
+            </div>
+          )}
 
-        {/* Content */}
-        <div className='p-6 overflow-y-auto scrollbar-hide flex-1'>{children}</div>
+          {/* Content */}
+          <div className='p-6 overflow-y-auto scrollbar-hide flex-1'>{children}</div>
 
-        {/* Footer */}
-        {footer && <div className='flex items-center justify-end gap-3 p-6 border-t border-cream-300'>{footer}</div>}
+          {/* Footer */}
+          {footer && <div className='flex items-center justify-end gap-3 p-6 border-t border-cream-300'>{footer}</div>}
         </div>
       </div>
     </>
