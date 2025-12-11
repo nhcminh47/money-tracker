@@ -18,6 +18,7 @@ import {
   type Category,
 } from '@/lib/services/categories'
 import { formatCurrency, getSettings, type AppSettings } from '@/lib/services/settings'
+import { onDataChange } from '@/lib/services/sync'
 import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
 
@@ -83,20 +84,14 @@ export default function CategoriesClient() {
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all')
   const [stats, setStats] = useState<Record<string, { transactionCount: number; totalAmount: number }>>({})
 
+  // Listen for data changes from sync system
   useEffect(() => {
-    const supabase = createClient()
+    const unsubscribe = onDataChange(() => {
+      console.log('Data changed, reloading categories...')
+      loadData()
+    })
 
-    const categoriesChannel = supabase
-      .channel('categories-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
-        console.log('Category change detected')
-        loadData()
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(categoriesChannel)
-    }
+    return unsubscribe
   }, [])
 
   useEffect(() => {

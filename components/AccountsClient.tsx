@@ -7,6 +7,7 @@ import { useTranslation } from '@/lib/i18n/useTranslation'
 import { createAccount, deleteAccount, getAccountBalance, getAllAccounts, updateAccount } from '@/lib/services/accounts'
 import type { AppSettings } from '@/lib/services/settings'
 import { formatCurrency, getSettings } from '@/lib/services/settings'
+import { onDataChange } from '@/lib/services/sync'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -59,29 +60,14 @@ export default function AccountsClient() {
     }
   }
 
-  // Set up Realtime subscriptions for live updates
+  // Listen for data changes from sync system
   useEffect(() => {
-    const supabase = createClient()
+    const unsubscribe = onDataChange(() => {
+      console.log('Data changed, reloading accounts...')
+      loadAccounts()
+    })
 
-    const accountsChannel = supabase
-      .channel('accounts-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'accounts',
-        },
-        (payload) => {
-          console.log('Account change detected:', payload)
-          loadAccounts()
-        },
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(accountsChannel)
-    }
+    return unsubscribe
   }, [])
 
   async function loadAccounts() {

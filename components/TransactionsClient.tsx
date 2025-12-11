@@ -15,6 +15,7 @@ import { seedCategories } from '@/lib/db/utils'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { getAllAccounts, type Account } from '@/lib/services/accounts'
 import { formatCurrency, getSettings, type AppSettings } from '@/lib/services/settings'
+import { onDataChange } from '@/lib/services/sync'
 import {
   createTransaction,
   deleteTransaction,
@@ -68,33 +69,15 @@ export default function TransactionsClient() {
     loadData()
   }, [filterAccountId, filterStartDate, filterEndDate])
 
-  // Set up Realtime subscriptions for live updates
+  // Listen for data changes from sync system
   useEffect(() => {
-    const supabase = createClient()
+    const unsubscribe = onDataChange(() => {
+      console.log('Data changed, reloading transactions...')
+      loadData()
+    })
 
-    // Subscribe to transactions table changes
-    const transactionsChannel = supabase
-      .channel('transactions-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'transactions',
-        },
-        (payload) => {
-          console.log('Transaction change detected:', payload)
-          // Reload data when changes are detected from other devices
-          loadData()
-        },
-      )
-      .subscribe()
-
-    // Cleanup subscription on unmount
-    return () => {
-      supabase.removeChannel(transactionsChannel)
-    }
-  }, [])
+    return unsubscribe
+  }, [filterAccountId, filterStartDate, filterEndDate])
 
   async function loadData() {
     try {

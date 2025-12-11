@@ -12,6 +12,7 @@ import { createBudget, deleteBudget, getAllBudgetStatuses, updateBudget } from '
 import { getAllCategories } from '@/lib/services/categories'
 import type { AppSettings } from '@/lib/services/settings'
 import { formatCurrency, getSettings } from '@/lib/services/settings'
+import { onDataChange } from '@/lib/services/sync'
 import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
 
@@ -41,20 +42,14 @@ export default function BudgetsClient() {
     loadData()
   }, [])
 
+  // Listen for data changes from sync system
   useEffect(() => {
-    const supabase = createClient()
+    const unsubscribe = onDataChange(() => {
+      console.log('Data changed, reloading budgets...')
+      loadData()
+    })
 
-    const budgetsChannel = supabase
-      .channel('budgets-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'budgets' }, () => {
-        console.log('Budget change detected')
-        loadData()
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(budgetsChannel)
-    }
+    return unsubscribe
   }, [])
 
   async function loadData() {

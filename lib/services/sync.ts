@@ -30,6 +30,26 @@ let syncDebounceTimer: NodeJS.Timeout | null = null
 let isSyncRunning = false
 let realtimeChannel: any = null
 
+// Event emitter for data changes
+const dataChangeListeners: Set<() => void> = new Set()
+
+// Subscribe to data change events
+export function onDataChange(listener: () => void): () => void {
+  dataChangeListeners.add(listener)
+  return () => dataChangeListeners.delete(listener)
+}
+
+// Notify all listeners that data has changed
+function notifyDataChange(): void {
+  dataChangeListeners.forEach((listener) => {
+    try {
+      listener()
+    } catch (error) {
+      console.error('Error in data change listener:', error)
+    }
+  })
+}
+
 // Get current sync status
 export function getSyncStatus(): SyncStatus {
   return { ...syncStatus }
@@ -418,6 +438,12 @@ async function pullEntityChanges(supabase: any, tableName: string, since: string
         await dbTable.put(entity)
       }
     }
+  }
+
+  // Notify components that data has changed
+  if (entities.length > 0) {
+    console.log(`Pulled ${entities.length} ${tableName} - notifying UI`)
+    notifyDataChange()
   }
 }
 
