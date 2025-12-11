@@ -32,6 +32,9 @@ export function createClient() {
     auth: {
       storage: createStorageAdapter(),
       persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      flowType: 'pkce', // More secure and works better with Safari
     },
   })
 }

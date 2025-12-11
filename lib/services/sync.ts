@@ -83,17 +83,17 @@ export async function isAuthenticated(): Promise<boolean> {
       data: { user },
       error,
     } = await supabase.auth.getUser()
-    
+
     if (error) {
       console.error('❌ Auth check failed:', error.message)
       return false
     }
-    
+
     if (!user) {
       console.log('⚠️ No authenticated user found')
       return false
     }
-    
+
     console.log('✅ User authenticated:', user.id)
     return true
   } catch (error) {
