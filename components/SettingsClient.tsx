@@ -7,6 +7,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Toast } from '@/components/ui/Toast'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { applyTheme, getSettings, resetSettings, updateSettings, type AppSettings } from '@/lib/services/settings'
+import { manualSync } from '@/lib/services/sync'
 import { validatePassphrase } from '@/lib/utils/crypto'
 import { clearDemoData, hasDemoData, seedDemoData } from '@/lib/utils/demoData'
 import { downloadBackup, downloadCSV, exportData, exportEncrypted, exportTransactionsCSV, importEncrypted } from '@/lib/utils/export'
@@ -121,6 +122,19 @@ export default function SettingsClient() {
     } catch (error) {
       console.error('Failed to clear demo data:', error)
       showToast(t.settings.demoClearFailed, 'error')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  async function handleManualSync() {
+    setIsProcessing(true)
+    try {
+      await manualSync()
+      showToast('Sync completed successfully', 'success')
+    } catch (error) {
+      console.error('Manual sync failed:', error)
+      showToast('Sync failed. Please try again.', 'error')
     } finally {
       setIsProcessing(false)
     }
@@ -312,6 +326,15 @@ export default function SettingsClient() {
       <div className='bg-white rounded-card shadow-card p-6'>
         <h3 className='text-xl font-bold mb-6'>{t.settings.dataManagement}</h3>
         <div className='space-y-2'>
+          <Button
+            variant='primary'
+            onClick={handleManualSync}
+            disabled={isProcessing}
+            className='w-full justify-start'
+          >
+            <span className='mr-2'>🔄</span>
+            {isProcessing ? 'Syncing...' : 'Sync Now'}
+          </Button>
           <Button
             variant='secondary'
             onClick={handleExportJSON}
