@@ -48,44 +48,32 @@ export function SyncStatus() {
     }
   }
 
-  // Don't show if no pending changes and not syncing
-  if (status.pending === 0 && !status.syncing) return null
+  // Only show when actively syncing or has error
+  // Don't show for pending changes (background sync will handle it)
+  if (!status.syncing && !status.error) return null
 
   return (
-    <div className='fixed bottom-20 md:bottom-4 right-4 z-50'>
-      <div className='bg-white rounded-lg shadow-lg border border-gray-200 px-4 py-3 flex items-center gap-3'>
+    <div className='fixed bottom-24 md:bottom-4 right-4 z-50'>
+      <div className='bg-white rounded-lg shadow-lg border border-gray-200 px-4 py-2.5 flex items-center gap-2'>
         {status.syncing ? (
           <>
             <RefreshCw className='w-4 h-4 text-coral-500 animate-spin' />
-            <span className='text-sm text-gray-700'>Syncing...</span>
+            <span className='text-xs text-gray-700'>Syncing...</span>
           </>
         ) : status.error ? (
           <>
             <div className='w-2 h-2 bg-red-500 rounded-full' />
-            <span className='text-sm text-red-600'>Sync failed</span>
+            <span className='text-xs text-red-600'>Sync failed</span>
             {navigator.onLine && (
               <button
                 onClick={triggerSync}
-                className='text-xs text-coral-500 hover:text-coral-600 font-medium'
+                className='text-xs text-coral-500 hover:text-coral-600 font-medium ml-1'
               >
                 Retry
               </button>
             )}
           </>
-        ) : (
-          <>
-            <div className='w-2 h-2 bg-amber-500 rounded-full animate-pulse' />
-            <span className='text-sm text-gray-700'>{status.pending} pending</span>
-            {navigator.onLine && (
-              <button
-                onClick={triggerSync}
-                className='text-xs text-coral-500 hover:text-coral-600 font-medium'
-              >
-                Sync Now
-              </button>
-            )}
-          </>
-        )}
+        ) : null}
       </div>
     </div>
   )

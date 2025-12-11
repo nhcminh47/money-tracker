@@ -2,7 +2,19 @@
 
 import { useAuth } from '@/lib/auth/AuthContext'
 import { useTranslation } from '@/lib/i18n/useTranslation'
-import { ArrowLeftRight, ChevronLeft, ChevronRight, LayoutDashboard, LogOut, Palette, PiggyBank, Settings, Tag, Wallet } from 'lucide-react'
+import {
+  ArrowLeftRight,
+  BarChart3,
+  ChevronLeft,
+  ChevronRight,
+  LayoutDashboard,
+  LogOut,
+  Palette,
+  PiggyBank,
+  Settings,
+  Tag,
+  Wallet,
+} from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
@@ -25,6 +37,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
     { href: '/transactions', label: t.nav.transactions, icon: ArrowLeftRight },
     { href: '/budgets', label: t.nav.budgets, icon: PiggyBank },
     { href: '/categories', label: t.nav.categories, icon: Tag },
+    { href: '/reports', label: t.nav.reports, icon: BarChart3 },
     ...(process.env.NODE_ENV === 'development' ? [{ href: '/style-guide', label: 'Style Guide', icon: Palette }] : []),
     { href: '/settings', label: t.nav.settings, icon: Settings },
   ]

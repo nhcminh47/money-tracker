@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslation } from '@/lib/i18n/useTranslation'
-import { Flag, Folder, LayoutDashboard, Plus, User } from 'lucide-react'
+import { BarChart3, Flag, LayoutDashboard, Plus, User } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -11,7 +11,7 @@ export default function MobileBottomNav() {
 
   const navItems = [
     { href: '/', icon: LayoutDashboard, label: t.nav.dashboard },
-    { href: '/categories', icon: Folder, label: t.nav.categories },
+    { href: '/reports', icon: BarChart3, label: t.nav.reports },
     { href: '/transactions/new', icon: Plus, label: 'Add', isMainAction: true },
     { href: '/budgets', icon: Flag, label: t.nav.budgets },
     { href: '/settings', icon: User, label: t.nav.settings },

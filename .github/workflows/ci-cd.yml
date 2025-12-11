@@ -56,7 +56,7 @@ jobs:
 
       - name: Run TypeScript type check
         run: pnpm run type-check
-        
+
       # TODO: Fix next lint path issue with pnpm
       # - name: Run ESLint
       #   run: pnpm run lint

@@ -87,10 +87,10 @@ export function initializeBackgroundSync(): void {
     }
   })
 
-  // 3. Periodic sync every 30 seconds (if has pending changes)
+  // 3. Periodic sync every 60 seconds (if has pending changes)
   setInterval(() => {
     checkAndSync()
-  }, 30000) // 30 seconds
+  }, 60000) // 60 seconds
 
   // 4. WebSocket/Realtime for multi-device sync
   initializeRealtimeSync()
@@ -127,6 +127,9 @@ async function checkAndSync(): Promise<void> {
   const pendingChanges = await db.changelog.count()
   if (pendingChanges === 0) {
     console.log('No pending changes, skipping sync')
+    // Update status to clear syncing flag
+    syncStatus.pendingChanges = 0
+    syncStatus.isSyncing = false
     return
   }
 
@@ -243,7 +246,6 @@ export async function pushChanges(): Promise<void> {
     return
   }
 
-  syncStatus.isSyncing = true
   syncStatus.error = null
 
   try {
@@ -259,7 +261,6 @@ export async function pushChanges(): Promise<void> {
     syncStatus.pendingChanges = changes.length
 
     if (changes.length === 0) {
-      syncStatus.isSyncing = false
       return
     }
 
@@ -284,8 +285,6 @@ export async function pushChanges(): Promise<void> {
     console.error('Push changes failed:', error)
     syncStatus.error = error instanceof Error ? error.message : 'Push failed'
     throw error
-  } finally {
-    syncStatus.isSyncing = false
   }
 }
 
@@ -347,7 +346,6 @@ export async function pullChanges(): Promise<void> {
     return
   }
 
-  syncStatus.isSyncing = true
   syncStatus.error = null
 
   try {
@@ -370,8 +368,6 @@ export async function pullChanges(): Promise<void> {
     console.error('Pull changes failed:', error)
     syncStatus.error = error instanceof Error ? error.message : 'Pull failed'
     throw error
-  } finally {
-    syncStatus.isSyncing = false
   }
 }
 
@@ -449,6 +445,7 @@ export async function sync(): Promise<void> {
     syncStatus.lastSync = new Date().toISOString()
     syncStatus.pendingChanges = 0
     syncStatus.error = null
+    syncStatus.isSyncing = false
 
     // Save last sync time to storage
     await db.meta.put({ key: 'lastSyncTime', value: syncStatus.lastSync })
@@ -457,6 +454,7 @@ export async function sync(): Promise<void> {
   } catch (error) {
     console.error('Sync failed:', error)
     syncStatus.error = error instanceof Error ? error.message : 'Sync failed'
+    syncStatus.isSyncing = false
     throw error
   } finally {
     isSyncRunning = false
