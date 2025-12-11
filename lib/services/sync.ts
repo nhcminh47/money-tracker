@@ -310,6 +310,7 @@ async function pushEntityChanges(supabase: any, userId: string, entity: string, 
       ...change.payload,
       user_id: userId,
       id: change.entityId,
+      device_id: DEVICE_ID,
     }
 
     // Convert camelCase to snake_case for Supabase
@@ -319,7 +320,10 @@ async function pushEntityChanges(supabase: any, userId: string, entity: string, 
       if (change.op === 'create' || change.op === 'update') {
         await supabase.from(tableName).upsert(supabasePayload, { onConflict: 'id' })
       } else if (change.op === 'delete') {
-        await supabase.from(tableName).update({ deleted: true, updated_at: new Date().toISOString() }).eq('id', change.entityId)
+        await supabase
+          .from(tableName)
+          .update({ deleted: true, updated_at: new Date().toISOString(), device_id: DEVICE_ID })
+          .eq('id', change.entityId)
       }
 
       // Also log to change_log table
