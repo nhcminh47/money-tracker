@@ -27,7 +27,6 @@ import {
   type TransactionFormData,
   type TransactionSummary,
 } from '@/lib/services/transactions'
-import { createClient } from '@/lib/supabase/client'
 import { downloadCSV, exportTransactionsCSV } from '@/lib/utils/export'
 import { Download } from 'lucide-react'
 import { useEffect, useState } from 'react'

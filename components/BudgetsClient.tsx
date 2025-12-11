@@ -13,7 +13,6 @@ import { getAllCategories } from '@/lib/services/categories'
 import type { AppSettings } from '@/lib/services/settings'
 import { formatCurrency, getSettings } from '@/lib/services/settings'
 import { onDataChange } from '@/lib/services/sync'
-import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
 
 interface BudgetStatus {
