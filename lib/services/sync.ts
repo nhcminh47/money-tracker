@@ -166,6 +166,8 @@ function initializeRealtimeSync(): void {
 
   const supabase = createClient()
 
+  console.log('🔌 Setting up Realtime subscriptions...')
+
   // Subscribe to all tables for changes
   realtimeChannel = supabase
     .channel('all-changes')
@@ -217,7 +219,18 @@ function initializeRealtimeSync(): void {
         handleRealtimeChange(payload)
       },
     )
-    .subscribe()
+    .subscribe((status) => {
+      console.log('📡 Realtime subscription status:', status)
+      if (status === 'SUBSCRIBED') {
+        console.log('✅ Realtime WebSocket connected and listening')
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('❌ Realtime channel error - check Supabase Realtime settings')
+      } else if (status === 'TIMED_OUT') {
+        console.error('⏱️ Realtime subscription timed out')
+      } else if (status === 'CLOSED') {
+        console.warn('🔌 Realtime connection closed')
+      }
+    })
 
   console.log('Realtime sync initialized')
 }
