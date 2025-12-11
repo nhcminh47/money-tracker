@@ -77,11 +77,29 @@ export function triggerBackgroundSync(): void {
 
 // Check if user is authenticated
 export async function isAuthenticated(): Promise<boolean> {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  return !!user
+  try {
+    const supabase = createClient()
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser()
+    
+    if (error) {
+      console.error('❌ Auth check failed:', error.message)
+      return false
+    }
+    
+    if (!user) {
+      console.log('⚠️ No authenticated user found')
+      return false
+    }
+    
+    console.log('✅ User authenticated:', user.id)
+    return true
+  } catch (error) {
+    console.error('❌ Auth check exception:', error)
+    return false
+  }
 }
 
 /**
