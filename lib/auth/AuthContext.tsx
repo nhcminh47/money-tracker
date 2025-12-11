@@ -1,7 +1,7 @@
 'use client'
 
 import { db } from '@/lib/db'
-import { syncPendingChanges } from '@/lib/services/simple-sync'
+import { sync } from '@/lib/services/sync'
 import { supabase } from '@/lib/supabase/client'
 import { AuthError, Session, User } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
@@ -42,10 +42,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Handle auth events
       if (event === 'SIGNED_IN' && session?.user) {
-        // Clear local data and sync from server on sign in
+        // Sync data with server on sign in (pull remote data)
         console.log('User signed in, syncing data from server...')
         try {
-          await syncPendingChanges()
+          await sync()
         } catch (error) {
           console.error('Failed to sync on sign in:', error)
         }
